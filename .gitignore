@@ -75,3 +75,13 @@ out/
 *.pidb
 *.svclog
 *.scc
+
+# # Environments
+.env
+.venv
+env/
+venv/
+/venv/
+ENV/
+env.bak/
+venv.bak/
