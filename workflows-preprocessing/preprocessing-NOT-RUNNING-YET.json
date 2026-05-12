@@ -1,0 +1,231 @@
+{
+  "name": "preprocessing",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### Our form calls webhook",
+        "height": 80,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -16,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "9fd0754d-8fd3-459d-9afe-a1d5ecf8c01b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        192
+      ],
+      "id": "40145bfe-d1e6-4983-96de-dea25142d852",
+      "name": "API-Call with HF Dataset"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"download_url\": $json.downloadUrl } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        896,
+        0
+      ],
+      "id": "f1d2b365-c4a6-4714-9852-37dc10d5be9a",
+      "name": "API-Call with ZIP-URL"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f89e73b7-7ee8-47a4-8d1b-dcde5a213923",
+              "name": "downloadUrl",
+              "value": "=https://preprocess.flow-project.net/webhook/fc97f6c8-99e1-4149-ac87-894de3086660/files/{{ $binary.zipupload.fileName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "76223b6c-f6ae-48d3-b438-90bc19a43e28",
+      "name": "Create ZIP-URL"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "uploads",
+        "fileName": "={{ $json.zipupload[0].filename }}",
+        "binaryPropertyName": "=zipupload",
+        "additionalFields": {},
+        "tagsUi": {
+          "tagsValues": []
+        }
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "d2c69837-7ae0-443a-92b1-cc2787655250",
+      "name": "Upload ZIP-File",
+      "credentials": {
+        "s3": {
+          "id": "8JAgVdOvCMvRgyH6",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "uploads",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "ignoreBots": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        96
+      ],
+      "id": "05342355-eeef-4e9d-98c2-889ecc401c93",
+      "name": "Entrypoint called by form",
+      "webhookId": "a7100e1a-5596-44af-845b-916049d7497f",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Kcn7idWScWNelfTA",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4622e367-0f7c-45dd-9142-38c8390508eb",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        96
+      ],
+      "id": "21817107-de86-49df-bad6-370972138256",
+      "name": "ZIP? (or HF source)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Create ZIP-URL": {
+      "main": [
+        [
+          {
+            "node": "API-Call with ZIP-URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload ZIP-File": {
+      "main": [
+        [
+          {
+            "node": "Create ZIP-URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entrypoint called by form": {
+      "main": [
+        [
+          {
+            "node": "ZIP? (or HF source)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ZIP? (or HF source)": {
+      "main": [
+        [
+          {
+            "node": "Upload ZIP-File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "API-Call with HF Dataset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2b89d9ea-db78-4281-856e-03eb34de9c31",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "69c5ac709efddeb1926841a8dba71f057d4345bc500219252c23d3b33a2732e3"
+  },
+  "id": "s2e10TAcimKEpFoS",
+  "tags": [
+    {
+      "updatedAt": "2026-04-23T06:46:09.410Z",
+      "createdAt": "2026-04-23T06:46:09.410Z",
+      "id": "7NjtNIwbpxOf4m0G",
+      "name": "flow"
+    }
+  ]
+}
