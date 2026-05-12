@@ -1,0 +1,135 @@
+# docker-compose.n8n.yml
+
+# Creates a n8n environment with minio persistence
+# Needs a traefik container running in the `traefik-public` network
+# See docker-compose.traefik-proxy.yml in this folder
+
+# Required .env variables:
+#   DOMAIN_NAME  - domain, which is used for this environment (e.g. example.com)
+#   SUBDOMAIN - subdomain, where n8n is reachable (e.g. n8n) - do not forget to create a domain DNS entry
+#   SUBDOMAIN_WEBHOOK  - subdomain, where the n8n webhooks are reachable
+#   ENCRYPTION_KEY  - key to encrypt the n8n content (e.g. use `openssl rand -hex 32`)
+#   GENERIC_TIMEZONE  - define timezone of the n8n environment (e.g. Europe/Berlin)
+#   MINIO_ENDPOINT  - endpoint, where minio is reachable (only internal!); e.g. minio:9000
+#   MINIO_ROOT_USER  - username for the minio root user (e.g. minioadmin)
+#   MINIO_ROOT_PASSWORD  - minio root password
+#   BUCKET_NAME  - name of the created bucket, where the n8n uploads will be located (will be overwritten)
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      # --- Public URL (required for forms & webhooks) ---
+      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME}/
+      - N8N_DEFAULT_CORS=TRUE
+      - N8N_CORS_ALLOW_ORIGIN=https://${SUBDOMAIN}.${DOMAIN_NAME},https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME}
+
+      # --- Security ---
+      - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+
+      # --- Admin ---
+      - N8N_USER_MANAGEMENT_DISABLED=false
+      - NODE_ENV=production
+      - N8N_PAYLOAD_SIZE_MAX=128
+
+      # --- Timezone ---
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${GENERIC_TIMEZONE}
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./local-files:/files
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      - traefik.http.routers.n8n.entrypoints=websecure
+      - traefik.http.routers.n8n.tls.certresolver=letsencrypt
+      - traefik.http.services.n8n.loadbalancer.server.port=5678
+
+      - traefik.http.routers.n8n-webhook.rule=Host(`${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME}`)
+      - traefik.http.routers.n8n-webhook.entrypoints=websecure
+      - traefik.http.routers.n8n-webhook.tls.certresolver=letsencrypt
+
+      - traefik.http.middlewares.n8n.headers.sslredirect=true
+      - traefik.http.middlewares.n8n.headers.stsseconds=315360000
+      - traefik.http.middlewares.n8n.headers.browserxssfilter=true
+      - traefik.http.middlewares.n8n.headers.contenttypenosniff=true
+      - traefik.http.middlewares.n8n.headers.forcestsheader=true
+      - traefik.http.middlewares.n8n.headers.sslhost=${DOMAIN_NAME}
+      - traefik.http.middlewares.n8n.headers.stsincludesubdomains=true
+      - traefik.http.middlewares.n8n.headers.stspreload=true
+
+      - traefik.http.routers.n8n.middlewares=n8n@docker
+
+      # CORS middleware
+      - traefik.http.middlewares.n8n-cors.headers.accesscontrolalloworiginlist=*
+      - traefik.http.middlewares.n8n-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS
+      - traefik.http.middlewares.n8n-cors.headers.accesscontrolallowheaders=*
+      - traefik.http.middlewares.n8n-cors.headers.accesscontrolmaxage=3600
+      - traefik.http.routers.n8n-webhook.service=n8n
+      - traefik.http.routers.n8n-webhook.middlewares=n8n-cors@docker
+
+    networks:
+      - traefik-public
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - traefik-public
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ENDPOINT: minio:9000
+      BUCKET_NAME: ${BUCKET_NAME}
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Initializing MinIO...';
+      /usr/bin/mc alias set myminio http://$${MINIO_ENDPOINT} $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc mb myminio/$${BUCKET_NAME} --ignore-existing;
+      echo 'MinIO initialization complete';
+      exit 0;
+      "
+    networks:
+      - traefik-public
+
+# ── Volumes ──────────────────────────────────────────────────────────
+volumes:
+  n8n-data:
+    driver: local
+  minio-data:
+
+# ── Networks ─────────────────────────────────────────────────────────
+networks:
+  traefik-public:
+    external: true
