@@ -1,19 +1,23 @@
 # docker-compose.n8n.yml
 
-# Creates a n8n environment with minio persistence
+# Creates a n8n environment with minio persistence and a static form frontend
 # Needs a traefik container running in the `traefik-public` network
 # See docker-compose.traefik-proxy.yml in this folder
 
 # Required .env variables:
-#   DOMAIN_NAME  - domain, which is used for this environment (e.g. example.com)
-#   SUBDOMAIN - subdomain, where n8n is reachable (e.g. n8n) - do not forget to create a domain DNS entry
-#   SUBDOMAIN_WEBHOOK  - subdomain, where the n8n webhooks are reachable
-#   ENCRYPTION_KEY  - key to encrypt the n8n content (e.g. use `openssl rand -hex 32`)
-#   GENERIC_TIMEZONE  - define timezone of the n8n environment (e.g. Europe/Berlin)
-#   MINIO_ENDPOINT  - endpoint, where minio is reachable (only internal!); e.g. minio:9000
-#   MINIO_ROOT_USER  - username for the minio root user (e.g. minioadmin)
-#   MINIO_ROOT_PASSWORD  - minio root password
-#   BUCKET_NAME  - name of the created bucket, where the n8n uploads will be located (will be overwritten)
+#   DOMAIN_NAME         - domain, which is used for this environment (e.g. example.com)
+#   SUBDOMAIN           - subdomain, where n8n is reachable (e.g. n8n)
+#   SUBDOMAIN_WEBHOOK   - subdomain, where the n8n webhooks are reachable
+#   SUBDOMAIN_MINIO     - subdomain, where MinIO S3 API is publicly reachable (e.g. minio)
+#   SUBDOMAIN_FORM      - subdomain, where the preprocessing form is served (e.g. form)
+#   SUBDOMAIN_MAIL      - subdomain for the mail server hostname (e.g. mail)
+#   ENCRYPTION_KEY      - key to encrypt the n8n content (use `openssl rand -hex 32`)
+#   GENERIC_TIMEZONE    - define timezone of the n8n environment (e.g. Europe/Berlin)
+#   MINIO_ENDPOINT      - endpoint, where minio is reachable internally (e.g. minio:9000)
+#   MINIO_ROOT_USER     - username for the minio root user
+#   MINIO_ROOT_PASSWORD - minio root password
+#   BUCKET_NAME         - name of the created bucket (will be created if missing)
+#   SMTP_SENDER         - local part of the sender address (e.g. noreply → noreply@example.com)
 
 services:
   n8n:
@@ -41,6 +45,13 @@ services:
       # --- Timezone ---
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${GENERIC_TIMEZONE}
+
+      # --- SMTP (outbound mail via internal mailserver) ---
+      - N8N_EMAIL_MODE=smtp
+      - N8N_SMTP_HOST=mailserver
+      - N8N_SMTP_PORT=587
+      - N8N_SMTP_SSL=false
+      - N8N_SMTP_SENDER=${SMTP_SENDER}@${DOMAIN_NAME}
     volumes:
       - n8n-data:/home/node/.n8n
       - ./local-files:/files
@@ -90,6 +101,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # AIDEV-NOTE: MINIO_SERVER_URL makes MinIO embed the public hostname in its own responses/redirects
+      MINIO_SERVER_URL: https://${SUBDOMAIN_MINIO}.${DOMAIN_NAME}
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
@@ -98,6 +111,13 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.minio-api.rule=Host(`${SUBDOMAIN_MINIO}.${DOMAIN_NAME}`)
+      - traefik.http.routers.minio-api.entrypoints=websecure
+      - traefik.http.routers.minio-api.tls.certresolver=letsencrypt
+      - traefik.http.services.minio-api.loadbalancer.server.port=9000
     networks:
       - traefik-public
 
@@ -117,9 +137,43 @@ services:
       echo 'Initializing MinIO...';
       /usr/bin/mc alias set myminio http://$${MINIO_ENDPOINT} $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
       /usr/bin/mc mb myminio/$${BUCKET_NAME} --ignore-existing;
-      echo 'MinIO initialization complete';
+      /usr/bin/mc anonymous set download myminio/$${BUCKET_NAME};
+      echo 'MinIO initialization complete (bucket policy: public-read)';
       exit 0;
       "
+    networks:
+      - traefik-public
+
+  # ── Send-only SMTP relay (Postfix + OpenDKIM) ────────────────────────
+  # AIDEV-NOTE: send-only relay; no inbox/receiving. Get the DKIM public key with:
+  #   docker exec mailserver cat /etc/opendkim/keys/${DOMAIN_NAME}/mail.txt
+  mailserver:
+    image: boky/postfix:latest
+    container_name: mailserver
+    restart: unless-stopped
+    environment:
+      - HOSTNAME=${SUBDOMAIN_MAIL}.${DOMAIN_NAME}
+      - ALLOWED_SENDER_DOMAINS=${DOMAIN_NAME}
+      - DKIM_AUTOGENERATE=1
+    volumes:
+      - mailserver-opendkim-keys:/etc/opendkim/keys
+    networks:
+      - traefik-public
+
+  # ── Preprocessing form (static HTML, belongs to n8n stack) ───────────
+  preprocessing-form:
+    build:
+      context: ../workflows-preprocessing/form
+      dockerfile: Dockerfile
+    container_name: preprocessing-form
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.preprocessing-form.rule=Host(`${SUBDOMAIN_FORM}.${DOMAIN_NAME}`)
+      - traefik.http.routers.preprocessing-form.entrypoints=websecure
+      - traefik.http.routers.preprocessing-form.tls.certresolver=letsencrypt
+      - traefik.http.services.preprocessing-form.loadbalancer.server.port=80
     networks:
       - traefik-public
 
@@ -128,6 +182,7 @@ volumes:
   n8n-data:
     driver: local
   minio-data:
+  mailserver-opendkim-keys:
 
 # ── Networks ─────────────────────────────────────────────────────────
 networks:
