@@ -1,0 +1,138 @@
+{
+  "name": "MinIO Upload Cleanup",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## MinIO Upload Cleanup\nRuns every Monday at 02:00.\nLists all objects in the **uploads** bucket and deletes\nany file whose LastModified date is older than 7 days.",
+        "height": 140,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -160],
+      "id": "note-cleanup",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * 1"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 100],
+      "id": "schedule-weekly",
+      "name": "Every Monday 02:00"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "bucketName": "uploads",
+        "returnAll": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [240, 100],
+      "id": "s3-list",
+      "name": "S3: List All Objects",
+      "credentials": {
+        "s3": {
+          "id": "8JAgVdOvCMvRgyH6",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-older-than-7d",
+              "leftValue": "={{ new Date($json.LastModified) < new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [480, 100],
+      "id": "if-older-than-7d",
+      "name": "Older than 7 days?"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "bucketName": "uploads",
+        "fileName": "={{ $json.Key }}"
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [720, -60],
+      "id": "s3-delete",
+      "name": "S3: Delete Object",
+      "credentials": {
+        "s3": {
+          "id": "8JAgVdOvCMvRgyH6",
+          "name": "S3 account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Monday 02:00": {
+      "main": [
+        [{ "node": "S3: List All Objects", "type": "main", "index": 0 }]
+      ]
+    },
+    "S3: List All Objects": {
+      "main": [
+        [{ "node": "Older than 7 days?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Older than 7 days?": {
+      "main": [
+        [{ "node": "S3: Delete Object", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "69c5ac709efddeb1926841a8dba71f057d4345bc500219252c23d3b33a2732e3"
+  },
+  "id": "minio-upload-cleanup-v1",
+  "tags": [
+    {
+      "updatedAt": "2026-05-19T00:00:00.000Z",
+      "createdAt": "2026-05-19T00:00:00.000Z",
+      "id": "7NjtNIwbpxOf4m0G",
+      "name": "flow"
+    }
+  ]
+}

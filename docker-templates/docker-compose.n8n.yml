@@ -164,7 +164,7 @@ services:
   # ── Preprocessing form (static HTML, belongs to n8n stack) ───────────
   preprocessing-form:
     build:
-      context: ../workflows-preprocessing/form
+      context: ${FRONTEND_DOCKERFILE}
       dockerfile: Dockerfile
     container_name: preprocessing-form
     restart: unless-stopped
