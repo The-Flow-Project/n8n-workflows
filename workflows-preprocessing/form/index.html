@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow Preprocessing</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+
+  <header class="site-header">
+    <a class="site-header-left" href="https://flow-project.net" target="_blank" rel="noopener">
+      <img
+        src="TheFlow_white.png"
+        alt="The Flow"
+        class="site-logo"
+      />
+      <div class="site-header-divider"></div>
+      <span class="site-header-subtitle">Preprocessing</span>
+    </a>
+    <div class="site-header-right">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">flow-project.net</a>
+    </div>
+  </header>
+
+  <main class="site-main">
+    <div class="page">
+
+      <div class="page-header">
+        <h1>Flow Preprocessing</h1>
+        <p>Submit a Page XML / image export for preprocessing and upload to a HuggingFace Hub dataset.</p>
+      </div>
+
+      <form id="preprocess-form">
+
+        <!-- Authentication -->
+        <div class="card">
+          <div class="card-title">Authentication</div>
+          <div class="field">
+            <label for="api_key">Webhook API key</label>
+            <input type="password" id="api_key" name="api_key" placeholder="Enter your webhook API key" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <!-- ZIP Source -->
+        <div class="card">
+          <div class="card-title">ZIP Source</div>
+
+          <div class="toggle-row">
+            <button type="button" class="toggle-btn active" id="btn-url" onclick="setZipMode('url')">URL</button>
+            <button type="button" class="toggle-btn" id="btn-file" onclick="setZipMode('file')">Upload file</button>
+          </div>
+
+          <div id="zip-url-field" class="field">
+            <label for="zip_url">Nextcloud / public ZIP URL</label>
+            <input type="url" id="zip_url" name="zip_url" placeholder="https://example.com/yourzipfile.zip" />
+          </div>
+
+          <div id="zip-file-field" class="field" style="display:none">
+            <label for="zipfile">ZIP file <span class="hint">(max 500 MB)</span></label>
+            <input type="file" id="zipfile" name="zipfile" accept=".zip,application/zip" />
+          </div>
+        </div>
+
+        <!-- HuggingFace -->
+        <div class="card">
+          <div class="card-title">HuggingFace Target</div>
+
+          <div class="field">
+            <label for="hf_repo">Repository name <span class="hint">owner/repo-name</span></label>
+            <input type="text" id="hf_repo" name="huggingface_target_repo_name" placeholder="myorg/my-dataset" />
+          </div>
+
+          <div class="field">
+            <label for="hf_token">HuggingFace token</label>
+            <input type="password" id="hf_token" name="huggingface_token" placeholder="hf_…" />
+          </div>
+
+          <div class="field">
+            <label class="checkbox-row">
+              <input type="checkbox" name="huggingface_target_repo_private" id="hf_private" />
+              Private repository
+            </label>
+          </div>
+        </div>
+
+        <!-- Processing Options -->
+        <div class="card">
+          <div class="card-title">Processing Options</div>
+
+          <div class="field">
+            <label for="export_mode">Export mode</label>
+            <select id="export_mode" name="export_mode">
+              <option value="raw_xml" selected>raw_xml</option>
+              <option value="line">line</option>
+              <option value="text">text</option>
+            </select>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="checkboxes-grid">
+            <label class="checkbox-row">
+              <input type="checkbox" name="allow_empty_lines" checked />
+              Allow empty lines
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="crop" />
+              Crop images
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="append" />
+              Append (don't overwrite)
+            </label>
+          </div>
+        </div>
+
+        <!-- Notification -->
+        <div class="card">
+          <div class="card-title">Notification</div>
+          <div class="field">
+            <label for="notify_email">Email address for status updates</label>
+            <input type="email" id="notify_email" name="notify_email" placeholder="you@example.com" />
+          </div>
+        </div>
+
+        <!-- Expert Settings -->
+        <div class="expert-card">
+          <div class="expert-header" onclick="toggleExpert()">
+            <div class="expert-header-left">
+              <span class="expert-badge">Expert</span>
+              <span class="expert-title">Advanced settings</span>
+            </div>
+            <span class="expert-chevron" id="expert-chevron">▼</span>
+          </div>
+
+          <div class="expert-body" id="expert-body">
+
+            <div class="expert-section-title">Segmentation</div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="segment">Segmenter</label>
+                <select id="segment" name="segment">
+                  <option value="yolo" selected>yolo</option>
+                  <option value="kraken">kraken</option>
+                  <option value="none">none</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="batch_size">Batch size</label>
+                <input type="number" id="batch_size" name="batch_size" value="16" min="1" max="128" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="seg_model">Segmenter model names</label>
+              <input type="text" id="seg_model" name="segmenter_model_names" value="Riksarkivet/yolov9-lines-within-regions-1" />
+            </div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="seg_batch">Segmenter batch sizes</label>
+                <input type="number" id="seg_batch" name="segmenter_batch_sizes" value="16" min="1" max="128" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="checkbox-row">
+                <input type="checkbox" name="load_existing_segmentation" checked />
+                Load existing segmentation
+              </label>
+            </div>
+
+            <div class="expert-section-title">Line filtering</div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="min_width_line">Min line width <span class="hint">px</span></label>
+                <input type="number" id="min_width_line" name="min_width_line" value="40" min="0" />
+              </div>
+
+              <div class="field">
+                <label for="min_height_line">Min line height <span class="hint">px</span></label>
+                <input type="number" id="min_height_line" name="min_height_line" value="10" min="0" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="augmentation_loops">Augmentation loops</label>
+              <input type="number" id="augmentation_loops" name="augmentation_loops" value="2" min="0" max="20" />
+            </div>
+
+            <div class="expert-section-title">Train / test split</div>
+
+            <div class="row-3">
+              <div class="field">
+                <label for="split_train_ratio">Train ratio <span class="hint">0–1</span></label>
+                <input type="number" id="split_train_ratio" name="split_train_ratio" value="0.8" min="0" max="1" step="0.05" />
+              </div>
+
+              <div class="field">
+                <label for="split_seed">Seed</label>
+                <input type="number" id="split_seed" name="split_seed" value="42" min="0" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="checkbox-row">
+                <input type="checkbox" name="split_shuffle" id="split_shuffle" checked />
+                Shuffle before split
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">Start Preprocessing</button>
+
+        <div class="status-box" id="status-box"></div>
+
+      </form>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>© University of Bern 2026</span>
+    <div class="site-footer-links">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">The Flow Project</a>
+      <a href="https://github.com/the-flow-project" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://flow-project.net/impressum" target="_blank" rel="noopener">Impressum</a>
+    </div>
+  </footer>
+
+<script>
+  // AIDEV-NOTE: webhook URL — replace with your actual n8n production webhook URL
+  const WEBHOOK_URL = 'https://preprocess.flow-project.net/webhook/preprocess';
+
+  let zipMode = 'url';
+
+  function setZipMode(mode) {
+    zipMode = mode;
+    document.getElementById('zip-url-field').style.display = mode === 'url' ? '' : 'none';
+    document.getElementById('zip-file-field').style.display = mode === 'file' ? '' : 'none';
+    document.getElementById('btn-url').classList.toggle('active', mode === 'url');
+    document.getElementById('btn-file').classList.toggle('active', mode === 'file');
+  }
+
+  function toggleExpert() {
+    const body = document.getElementById('expert-body');
+    const chevron = document.getElementById('expert-chevron');
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+  }
+
+  function showStatus(type, message) {
+    const box = document.getElementById('status-box');
+    box.className = `status-box ${type}`;
+    box.textContent = message;
+    box.style.display = 'block';
+  }
+
+  document.getElementById('preprocess-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    showStatus('info', 'Sending request to preprocessing pipeline…');
+
+    try {
+      const form = e.target;
+      const apiKey = document.getElementById('api_key').value.trim();
+      if (!apiKey) {
+        showStatus('error', 'Please enter the webhook API key.');
+        btn.disabled = false;
+        btn.textContent = 'Start Preprocessing';
+        return;
+      }
+
+      const fd = new FormData(form);
+      fd.delete('api_key');
+
+      // Remove unused ZIP field based on mode
+      if (zipMode === 'url') {
+        fd.delete('zipfile');
+      } else {
+        fd.delete('zip_url');
+      }
+
+      // Convert checkboxes: unchecked boxes are absent from FormData, normalise to 'true'/'false'
+      ['huggingface_target_repo_private', 'allow_empty_lines', 'crop', 'append',
+       'load_existing_segmentation', 'split_shuffle']
+        .forEach(k => { fd.set(k, fd.has(k) ? 'true' : 'false'); });
+
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'X-API-KEY': apiKey },
+        body: fd
+      });
+
+      if (res.ok) {
+        showStatus('success',
+          `Job submitted successfully. You will receive an email at ${fd.get('notify_email')} when preprocessing is done.`);
+        btn.textContent = 'Submitted';
+      } else {
+        const text = await res.text();
+        showStatus('error', `Error ${res.status}: ${text}`);
+        btn.disabled = false;
+        btn.textContent = 'Start Preprocessing';
+      }
+    } catch (err) {
+      showStatus('error', `Network error: ${err.message}`);
+      btn.disabled = false;
+      btn.textContent = 'Start Preprocessing';
+    }
+  });
+</script>
+</body>
+</html>
