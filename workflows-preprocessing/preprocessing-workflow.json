@@ -15,6 +15,7 @@
     },
     {
       "parameters": {
+        "httpMethod": "POST",
         "path": "preprocess",
         "authentication": "headerAuth",
         "responseMode": "responseNode",

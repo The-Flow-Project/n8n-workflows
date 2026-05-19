@@ -31,7 +31,7 @@ services:
       - N8N_PROTOCOL=https
       - WEBHOOK_URL=https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME}/
       - N8N_DEFAULT_CORS=TRUE
-      - N8N_CORS_ALLOW_ORIGIN=https://${SUBDOMAIN}.${DOMAIN_NAME},https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME}
+      - N8N_CORS_ALLOW_ORIGIN=https://${SUBDOMAIN}.${DOMAIN_NAME},https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME},https://${SUBDOMAIN_FORM}.${DOMAIN_NAME}
 
       # --- Security ---
       - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
@@ -41,6 +41,7 @@ services:
       - N8N_USER_MANAGEMENT_DISABLED=false
       - NODE_ENV=production
       - N8N_PAYLOAD_SIZE_MAX=128
+      - N8N_TRUST_PROXY=true
 
       # --- Timezone ---
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
