@@ -43,13 +43,14 @@
           </div>
         </div>
 
-        <!-- ZIP Source -->
+        <!-- Data Source -->
         <div class="card">
-          <div class="card-title">ZIP Source</div>
+          <div class="card-title">Data Source</div>
 
           <div class="toggle-row">
-            <button type="button" class="toggle-btn active" id="btn-url" onclick="setZipMode('url')">URL</button>
-            <button type="button" class="toggle-btn" id="btn-file" onclick="setZipMode('file')">Upload file</button>
+            <button type="button" class="toggle-btn active" id="btn-url" onclick="setZipMode('url')">ZIP URL</button>
+            <button type="button" class="toggle-btn" id="btn-file" onclick="setZipMode('file')">ZIP upload</button>
+            <button type="button" class="toggle-btn" id="btn-hf" onclick="setZipMode('hf')">HuggingFace</button>
           </div>
 
           <div id="zip-url-field" class="field">
@@ -60,6 +61,11 @@
           <div id="zip-file-field" class="field" style="display:none">
             <label for="zipfile">ZIP file <span class="hint">(max 500 MB)</span></label>
             <input type="file" id="zipfile" name="zipfile" accept=".zip,application/zip" />
+          </div>
+
+          <div id="zip-hf-field" class="field" style="display:none">
+            <label for="hf_source_repo">Source repository <span class="hint">owner/repo-name — must contain xml and image columns</span></label>
+            <input type="text" id="hf_source_repo" name="huggingface_source_repo_name" placeholder="myorg/my-raw-xml-dataset" />
           </div>
         </div>
 
@@ -255,17 +261,25 @@
   </footer>
 
 <script>
-  // AIDEV-NOTE: webhook URL — replace with your actual n8n production webhook URL
-  const WEBHOOK_URL = 'https://preprocess.flow-project.net/webhook/preprocess';
+  // AIDEV-NOTE: webhook URLs — replace with your actual n8n production webhook URLs
+  const WEBHOOK_URL    = 'https://preprocess.flow-project.net/webhook/preprocess';
+  const WEBHOOK_HF_URL = 'https://preprocess.flow-project.net/webhook/preprocess-hf';
 
   let zipMode = 'url';
 
   function setZipMode(mode) {
+    const prev = zipMode;
     zipMode = mode;
-    document.getElementById('zip-url-field').style.display = mode === 'url' ? '' : 'none';
+    document.getElementById('zip-url-field').style.display  = mode === 'url'  ? '' : 'none';
     document.getElementById('zip-file-field').style.display = mode === 'file' ? '' : 'none';
-    document.getElementById('btn-url').classList.toggle('active', mode === 'url');
+    document.getElementById('zip-hf-field').style.display   = mode === 'hf'   ? '' : 'none';
+    document.getElementById('btn-url').classList.toggle('active',  mode === 'url');
     document.getElementById('btn-file').classList.toggle('active', mode === 'file');
+    document.getElementById('btn-hf').classList.toggle('active',   mode === 'hf');
+    // auto-switch export_mode default to match the typical use per source type
+    const exportMode = document.getElementById('export_mode');
+    if (mode === 'hf' && prev !== 'hf') exportMode.value = 'line';
+    if (mode !== 'hf' && prev === 'hf') exportMode.value = 'raw_xml';
   }
 
   function toggleExpert() {
@@ -282,48 +296,72 @@
     box.style.display = 'block';
   }
 
+  // Builds the request body as FormData. The only mode-specific part is the source field.
+  function buildBody(form) {
+    const gv = name => form.querySelector(`[name="${name}"]`).value;
+    const gc = name => String(form.querySelector(`[name="${name}"]`).checked);
+    const fd = new FormData();
+
+    // Source — the only difference between modes
+    if (zipMode === 'url')  fd.append('zip_url', gv('zip_url'));
+    if (zipMode === 'hf')   fd.append('huggingface_source_repo_name', gv('huggingface_source_repo_name'));
+    if (zipMode === 'file') { const f = form.querySelector('[name="zipfile"]')?.files[0]; if (f) fd.append('zipfile', f); }
+
+    // Common params — identical for all modes
+    fd.append('huggingface_target_repo_name',    gv('huggingface_target_repo_name'));
+    fd.append('huggingface_token',               gv('huggingface_token'));
+    fd.append('huggingface_target_repo_private', gc('huggingface_target_repo_private'));
+    fd.append('export_mode',                     gv('export_mode'));
+    fd.append('crop',                            gc('crop'));
+    fd.append('allow_empty_lines',               gc('allow_empty_lines'));
+    fd.append('append',                          gc('append'));
+    fd.append('batch_size',                      gv('batch_size'));
+    fd.append('augmentation_loops',              gv('augmentation_loops'));
+    fd.append('min_width_line',                  gv('min_width_line'));
+    fd.append('min_height_line',                 gv('min_height_line'));
+    fd.append('split_train_ratio',               gv('split_train_ratio'));
+    fd.append('split_seed',                      gv('split_seed'));
+    fd.append('split_shuffle',                   gc('split_shuffle'));
+    fd.append('segment',                         gv('segment'));
+    fd.append('segmenter_model_names',           gv('segmenter_model_names'));
+    fd.append('segmenter_batch_sizes',           gv('segmenter_batch_sizes'));
+    fd.append('load_existing_segmentation',      gc('load_existing_segmentation'));
+    fd.append('order_lines',                     gc('order_lines'));
+    fd.append('baselines',                       gc('baselines'));
+    fd.append('kraken_linemasks',                gc('kraken_linemasks'));
+    fd.append('creator',                         gv('creator'));
+    fd.append('notify_email',                    gv('notify_email'));
+
+    return fd;
+  }
+
   document.getElementById('preprocess-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('submit-btn');
+    const btn  = document.getElementById('submit-btn');
+    const form = e.target;
+
+    const apiKey = document.getElementById('api_key').value.trim();
+    if (!apiKey) {
+      showStatus('error', 'Please enter the webhook API key.');
+      return;
+    }
+
+    if (zipMode === 'hf' && !form.querySelector('[name="huggingface_source_repo_name"]').value.trim()) {
+      showStatus('error', 'Please enter the HuggingFace source repository name.');
+      return;
+    }
+
     btn.disabled = true;
     btn.textContent = 'Submitting…';
     showStatus('info', 'Sending request to preprocessing pipeline…');
 
+    const url = zipMode === 'hf' ? WEBHOOK_HF_URL : WEBHOOK_URL;
+
     try {
-      const form = e.target;
-      const apiKey = document.getElementById('api_key').value.trim();
-      if (!apiKey) {
-        showStatus('error', 'Please enter the webhook API key.');
-        btn.disabled = false;
-        btn.textContent = 'Start Preprocessing';
-        return;
-      }
-
-      const fd = new FormData(form);
-      fd.delete('api_key');
-
-      // Remove unused ZIP field based on mode
-      if (zipMode === 'url') {
-        fd.delete('zipfile');
-      } else {
-        fd.delete('zip_url');
-      }
-
-      // Convert checkboxes: unchecked boxes are absent from FormData, normalise to 'true'/'false'
-      ['huggingface_target_repo_private', 'allow_empty_lines', 'crop', 'append',
-       'load_existing_segmentation', 'order_lines', 'baselines', 'kraken_linemasks',
-       'split_shuffle']
-        .forEach(k => { fd.set(k, fd.has(k) ? 'true' : 'false'); });
-
-      const res = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'X-API-KEY': apiKey },
-        body: fd
-      });
-
+      const res = await fetch(url, { method: 'POST', headers: { 'X-API-KEY': apiKey }, body: buildBody(form) });
       if (res.ok) {
         showStatus('success',
-          `Job submitted successfully. You will receive an email at ${fd.get('notify_email')} when preprocessing is done.`);
+          `Job submitted successfully. You will receive an email at ${form.querySelector('[name="notify_email"]').value} when preprocessing is done.`);
         btn.textContent = 'Submitted';
       } else {
         const text = await res.text();
