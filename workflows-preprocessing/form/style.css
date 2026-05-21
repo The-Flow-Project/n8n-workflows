@@ -103,6 +103,16 @@ body {
 
 .site-header-right a:hover { color: var(--color-brand-text); }
 
+/* ── Beta banner ─────────────────────────────────────────────────────── */
+.beta-banner {
+  background: var(--color-error-bg);
+  border-bottom: 1px solid var(--color-error-border);
+  color: var(--color-error-text);
+  text-align: center;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+}
+
 /* ── Main content ────────────────────────────────────────────────────── */
 .site-main {
   flex: 1;
@@ -264,6 +274,75 @@ input[type="file"] {
   margin: 1rem 0;
 }
 
+/* ── Tooltips ────────────────────────────────────────────────────────── */
+.tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-style: normal;
+  cursor: default;
+  position: relative;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tooltip-icon:hover {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+/* tooltip box */
+.tooltip-icon::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text-heading);
+  color: #fff;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.775rem;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: normal;
+  width: 210px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+  text-transform: none;
+  letter-spacing: normal;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* downward-pointing arrow connecting box to icon */
+.tooltip-icon::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--color-text-heading);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+
+.tooltip-icon:hover::after,
+.tooltip-icon:hover::before { opacity: 1; }
+
 /* ── Submit button ───────────────────────────────────────────────────── */
 .submit-btn {
   width: 100%;
@@ -315,7 +394,6 @@ input[type="file"] {
   border-radius: 12px;
   border: 1px solid var(--color-border);
   margin-bottom: 1.25rem;
-  overflow: hidden;
 }
 
 .expert-header {
@@ -326,6 +404,12 @@ input[type="file"] {
   cursor: pointer;
   user-select: none;
   transition: background 0.15s;
+  border-radius: 12px;
+}
+
+/* flatten bottom corners when body is expanded */
+.expert-card:has(.expert-body.open) .expert-header {
+  border-radius: 12px 12px 0 0;
 }
 
 .expert-header:hover { background: var(--color-bg); }
@@ -360,15 +444,25 @@ input[type="file"] {
   transition: transform 0.2s;
 }
 
-.expert-chevron.open { transform: rotate(180deg); }
+.expert-chevron.open { transform: rotate(-90deg); }
 
 .expert-body {
   display: none;
-  padding: 0 1.75rem 1.75rem;
-  border-top: 1px solid var(--color-bg);
+  border-top: 1px solid var(--color-border);
 }
 
-.expert-body.open { display: block; }
+.expert-body.open {
+  display: flex;
+  flex-direction: column;
+}
+
+.expert-section {
+  padding: 1.25rem 1.75rem;
+}
+
+.expert-section + .expert-section {
+  border-top: 1px solid var(--color-border);
+}
 
 .expert-section-title {
   font-size: 0.75rem;
@@ -376,10 +470,17 @@ input[type="file"] {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
-  margin: 1.25rem 0 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.expert-section-title:first-child { margin-top: 1rem; }
+.expert-section-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* reset individual margins — gap handles all spacing inside expert sections */
+.expert-section-fields > * { margin-bottom: 0; }
 
 /* ── Site footer ─────────────────────────────────────────────────────── */
 .site-footer {
