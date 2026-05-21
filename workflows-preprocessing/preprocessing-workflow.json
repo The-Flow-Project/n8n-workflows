@@ -1,5 +1,5 @@
 {
-  "name": "Preprocessing Pipeline",
+  "name": "ZIP Preprocessing Pipeline",
   "nodes": [
     {
       "parameters": {
