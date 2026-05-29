@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow Inference</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+
+  <header class="site-header">
+    <a class="site-header-left" href="https://flow-project.net" target="_blank" rel="noopener">
+      <img src="TheFlow_white.png" alt="The Flow" class="site-logo" />
+      <div class="site-header-divider"></div>
+      <span class="site-header-subtitle">Inference</span>
+    </a>
+    <div class="site-header-right">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">flow-project.net</a>
+    </div>
+  </header>
+
+  <div class="beta-banner">
+    <strong>Beta</strong> — This service is currently in beta. Expect changes and potential instability.
+  </div>
+
+  <main class="site-main">
+    <div class="page">
+      <div class="page-header">
+        <h1>Flow TrOCR Inference</h1>
+        <p>Run TrOCR inference on a HuggingFace dataset and optionally push the output to a HuggingFace Hub dataset.</p>
+      </div>
+
+      <form id="inference-form">
+
+        <div class="card">
+          <div class="card-title">Authentication</div>
+          <div class="field">
+            <label for="api_key">Webhook API key <span class="tooltip-icon" data-tip="The secret API key required to authenticate your n8n webhook request.">?</span></label>
+            <input type="password" id="api_key" name="api_key" placeholder="Enter your webhook API key" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">HuggingFace Repositories</div>
+          <div class="field">
+            <label for="source_repo_name">Source dataset repository <span class="hint">owner/repo-name</span><span class="tooltip-icon" data-tip="Input HuggingFace dataset used for inference.">?</span></label>
+            <input type="text" id="source_repo_name" name="source_repo_name" placeholder="my-org/my-source-dataset" />
+          </div>
+          <div class="field">
+            <label for="upload_repo_name">Output dataset repository <span class="hint">owner/repo-name</span><span class="tooltip-icon" data-tip="Target HuggingFace dataset for inference output.">?</span></label>
+            <input type="text" id="upload_repo_name" name="upload_repo_name" placeholder="my-org/target-dataset-for-inference-output" />
+          </div>
+          <div class="field">
+            <label for="hf_token">HuggingFace token <span class="tooltip-icon" data-tip="A HuggingFace access token with permissions for the output repository.">?</span></label>
+            <input type="password" id="hf_token" name="huggingface_token" placeholder="hf_…" />
+          </div>
+          <div class="field">
+            <label class="checkbox-row">
+              <input type="checkbox" name="private_repo" id="private_repo" checked />
+              Private output repository
+              <span class="tooltip-icon" data-tip="If checked, the output dataset repository is created as private.">?</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Inference Settings</div>
+          <div class="field">
+            <label for="trocr_model">TrOCR model <span class="tooltip-icon" data-tip="HuggingFace model identifier used for inference.">?</span></label>
+            <input type="text" id="trocr_model" name="trocr_model" value="microsoft/trocr-small-printed" />
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="target_image_width">Target image width <span class="hint">optional</span><span class="tooltip-icon" data-tip="Leave empty to let the inference service use its default image size. Only set this if you explicitly want resizing.">?</span></label>
+              <input type="number" id="target_image_width" name="target_image_width" min="1" placeholder="auto" />
+            </div>
+            <div class="field">
+              <label for="target_image_height">Target image height <span class="hint">optional</span><span class="tooltip-icon" data-tip="Leave empty to let the inference service use its default image size. Only set this if you explicitly want resizing.">?</span></label>
+              <input type="number" id="target_image_height" name="target_image_height" min="1" placeholder="auto" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="splits">Splits <span class="hint">comma-separated</span><span class="tooltip-icon" data-tip="Dataset splits to process, for example train, test or train,test.">?</span></label>
+            <input type="text" id="splits" name="splits" value="train" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Upload Options</div>
+          <div class="field">
+            <label for="upload_mode">Upload mode</label>
+            <select id="upload_mode" name="upload_mode">
+              <option value="new_repo" selected>new_repo</option>
+              <option value="overwrite">overwrite</option>
+              <option value="append">append</option>
+            </select>
+          </div>
+          <div class="checkboxes-grid">
+            <label class="checkbox-row">
+              <input type="checkbox" name="push_to_hub" checked />
+              Push to Hub
+              <span class="tooltip-icon" data-tip="If checked, inference output is pushed to HuggingFace Hub.">?</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="allow_source_repo_update" />
+              Allow source repo update
+              <span class="tooltip-icon" data-tip="If checked, the service may update the source repository if supported.">?</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="stop_on_fail" />
+              Stop on fail
+              <span class="tooltip-icon" data-tip="If checked, the inference job stops after the first failure.">?</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Notification</div>
+          <div class="field">
+            <label for="notify_email">Email address for status updates <span class="hint">optional</span></label>
+            <input type="email" id="notify_email" name="notify_email" placeholder="you@example.com" />
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">Start Inference</button>
+        <div class="status-box" id="status-box"></div>
+      </form>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>© University of Bern 2026</span>
+    <div class="site-footer-links">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">The Flow Project</a>
+      <a href="https://github.com/the-flow-project" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://flow-project.net/impressum" target="_blank" rel="noopener">Impressum</a>
+    </div>
+  </footer>
+
+<script>
+  // Local test URL while the n8n webhook node is listening:
+  const WEBHOOK_URL = 'http://localhost:5678/webhook-test/inference-start';
+
+  // Activated local workflow:
+  //const WEBHOOK_URL = 'http://localhost:5678/webhook/inference-start';
+
+  // Production URL — replace with deployed n8n webhook URL:
+  //const WEBHOOK_URL = 'https://preprocess.flow-project.net/webhook/inference-start';
+
+  function showStatus(type, message) {
+    const box = document.getElementById('status-box');
+    box.className = `status-box ${type}`;
+    box.textContent = message;
+    box.style.display = 'block';
+  }
+
+  const gv = (form, name) => form.querySelector(`[name="${name}"]`)?.value?.trim() ?? '';
+  const gc = (form, name) => Boolean(form.querySelector(`[name="${name}"]`)?.checked);
+
+  function buildBody(form) {
+    const targetImageWidth = gv(form, 'target_image_width');
+    const targetImageHeight = gv(form, 'target_image_height');
+    const targetImageSize = targetImageWidth && targetImageHeight
+      ? [parseInt(targetImageWidth, 10), parseInt(targetImageHeight, 10)]
+      : null;
+
+    return {
+      upload_repo_name: gv(form, 'upload_repo_name'),
+      private_repo: gc(form, 'private_repo'),
+      trocr_model: gv(form, 'trocr_model') || 'microsoft/trocr-small-printed',
+      target_image_size: targetImageSize,
+      stop_on_fail: gc(form, 'stop_on_fail'),
+      splits: gv(form, 'splits').split(',').map(s => s.trim()).filter(Boolean),
+      push_to_hub: gc(form, 'push_to_hub'),
+      upload_mode: gv(form, 'upload_mode') || 'new_repo',
+      allow_source_repo_update: gc(form, 'allow_source_repo_update'),
+      huggingface_token: gv(form, 'huggingface_token'),
+      source_repo_name: gv(form, 'source_repo_name'),
+      notify_email: gv(form, 'notify_email'),
+    };
+  }
+
+  document.getElementById('inference-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('submit-btn');
+    const apiKey = document.getElementById('api_key').value.trim();
+
+    if (!apiKey) {
+      showStatus('error', 'Please enter the webhook API key.');
+      return;
+    }
+
+    if (!gv(form, 'source_repo_name') || !gv(form, 'upload_repo_name') || !gv(form, 'huggingface_token')) {
+      showStatus('error', 'Please fill in source repo, output repo, and HuggingFace token.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    showStatus('info', 'Sending request to inference pipeline…');
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': apiKey,
+        },
+        body: JSON.stringify(buildBody(form)),
+      });
+
+      if (res.ok) {
+        showStatus('success', 'Inference job submitted successfully. You will receive an email if notifications are enabled.');
+        btn.textContent = 'Submitted';
+      } else {
+        const text = await res.text();
+        showStatus('error', `Error ${res.status}: ${text}`);
+        btn.disabled = false;
+        btn.textContent = 'Start Inference';
+      }
+    } catch (err) {
+      showStatus('error', `Network error: ${err.message}`);
+      btn.disabled = false;
+      btn.textContent = 'Start Inference';
+    }
+  });
+</script>
+</body>
+</html>
