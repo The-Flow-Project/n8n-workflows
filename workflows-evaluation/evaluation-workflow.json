@@ -1,0 +1,563 @@
+{
+  "name": "Evaluation Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Hugging Face Evaluation Pipeline\n1. Form or API POSTs JSON to this webhook\n2. Evaluation API is called at /evaluation/hf/start\n3. Status is polled every 30s\n4. Email sent on success/failure\n\nThe service evaluates inference output from a HuggingFace dataset and writes back evaluation statistics.",
+        "height": 220,
+        "width": 460
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a69c5f1e-3541-4db3-9730-b934e03efb7f",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evaluation-start",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "ignoreBots": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        304
+      ],
+      "id": "98d54a04-3db5-45e1-8054-9e7aa4350b13",
+      "name": "Webhook: Receive Evaluation Request",
+      "webhookId": "evaluation-webhook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fTo5NQ0AqGDZE5U6",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"status\": \"accepted\", \"message\": \"Evaluation started. You will receive an email when it is done.\" }",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        224,
+        208
+      ],
+      "id": "225161b8-9880-4b56-8908-4218f2c84371",
+      "name": "Respond: 202 Accepted"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-params",
+              "name": "params",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        400
+      ],
+      "id": "42165513-3faf-48fb-a690-379c9f8079ff",
+      "name": "Build Evaluation Params"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/evaluation/hf/start",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "huggingface_repo_name",
+              "value": "={{ $json.params.huggingface_repo_name }}"
+            },
+            {
+              "name": "huggingface_token",
+              "value": "={{ $json.params.huggingface_token }}"
+            },
+            {
+              "name": "splits",
+              "value": "={{ $json.params.splits ?? ['test'] }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        400
+      ],
+      "id": "4d5cf86f-1ce5-42df-be20-9980cf85df6c",
+      "name": "POST: Start Evaluation",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fTo5NQ0AqGDZE5U6",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-process-id",
+              "name": "process_id",
+              "value": "={{ $json.request_id ?? $json.process_id ?? $json.id ?? $json.job_id }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-notify-email",
+              "name": "notify_email",
+              "value": "={{ $('Webhook: Receive Evaluation Request').item.json.body.notify_email }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-repo-name",
+              "name": "repo_name",
+              "value": "={{ $('Webhook: Receive Evaluation Request').item.json.body.huggingface_repo_name }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-splits",
+              "name": "splits",
+              "value": "={{ $('Webhook: Receive Evaluation Request').item.json.body.splits }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        400
+      ],
+      "id": "3713323b-30c5-46a0-8974-80c0744eb73c",
+      "name": "Extract Job ID & Email"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        400
+      ],
+      "id": "a8b0e7a7-6e77-41f1-ad7a-49ce3408fb81",
+      "name": "Wait 30s",
+      "webhookId": "638cd781-8111-42ce-8622-ae076f940c2a"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:8001/evaluation/status/{{ $json.process_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        336
+      ],
+      "id": "4f33e41e-f58d-4038-a444-5bc0d524aede",
+      "name": "GET: Check Status",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fTo5NQ0AqGDZE5U6",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "merge-process-id",
+              "name": "process_id",
+              "value": "={{ $('Extract Job ID & Email').item.json.process_id }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-notify-email",
+              "name": "notify_email",
+              "value": "={{ $('Extract Job ID & Email').item.json.notify_email }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-repo-name",
+              "name": "repo_name",
+              "value": "={{ $('Extract Job ID & Email').item.json.repo_name }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-splits",
+              "name": "splits",
+              "value": "={{ $('Extract Job ID & Email').item.json.splits }}",
+              "type": "array"
+            },
+            {
+              "id": "merge-status",
+              "name": "status",
+              "value": "={{ $json.state ?? $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-error-message",
+              "name": "error_message",
+              "value": "={{ $json.error_message ?? $json.error ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-runtime",
+              "name": "runtime",
+              "value": "={{ $json.runtime ?? $json.duration ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "merge-total-items",
+              "name": "total_items",
+              "value": "={{ $json.total_items ?? $json.total_lines ?? $json.total_pages ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "merge-result-url",
+              "name": "result_url",
+              "value": "={{ $json.result_url ?? ('https://huggingface.co/datasets/' + $('Extract Job ID & Email').item.json.repo_name) }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-metrics",
+              "name": "metrics",
+              "value": "={{ $json.metrics ?? $json.result ?? $json.results ?? {} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        336
+      ],
+      "id": "daafb0ae-f9b8-426d-a1ea-342845de2dd6",
+      "name": "Merge Status Context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-not-in-progress",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "in_progress",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "cond-not-pending",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "cond-not-started",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "started",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        400
+      ],
+      "id": "5812a49e-f23d-42ec-a84a-84ac29461cdd",
+      "name": "Job finished?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        400
+      ],
+      "id": "a6775586-87f1-4cd1-9db1-2d353b6d0ee7",
+      "name": "Success or Failure?"
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Evaluation complete: {{ $json.repo_name }}",
+        "emailFormat": "both",
+        "text": "=Evaluation finished successfully\n\nDataset: {{ $json.repo_name }}\nSplits: {{ JSON.stringify($json.splits) }}\nJob ID: {{ $json.process_id }}\nItems evaluated: {{ $json.total_items }}\nRuntime: {{ $json.runtime }}s\n\nResult URL: {{ $json.result_url }}\n\nMetrics:\n{{ JSON.stringify($json.metrics, null, 2) }}\n\n----\nSent by the Flow evaluation pipeline.",
+        "html": "=<h2>Evaluation finished successfully</h2><ul><li><strong>Dataset:</strong> {{ $json.repo_name }}</li><li><strong>Splits:</strong> {{ JSON.stringify($json.splits) }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Items evaluated:</strong> {{ $json.total_items }}</li><li><strong>Runtime:</strong> {{ $json.runtime }}s</li></ul><p>Result URL: <a href=\"{{ $json.result_url }}\">{{ $json.result_url }}</a></p><h3>Metrics</h3><pre>{{ JSON.stringify($json.metrics, null, 2) }}</pre><hr><p><small>Sent by the Flow evaluation pipeline.</small></p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2016,
+        304
+      ],
+      "id": "90b04667-289b-4254-83d7-b27c2c30fe9c",
+      "name": "Email: Success",
+      "webhookId": "0ef87b04-d325-4ac7-85e1-c503451620f4",
+      "credentials": {
+        "smtp": {
+          "id": "SU1oQTKpVo8gu007",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Evaluation FAILED: {{ $json.repo_name }}",
+        "emailFormat": "both",
+        "text": "=Evaluation failed\n\nDataset: {{ $json.repo_name }}\nSplits: {{ JSON.stringify($json.splits) }}\nJob ID: {{ $json.process_id }}\nStatus: {{ $json.status }}\nError: {{ $json.error_message }}\n\nPlease check the evaluation service logs.\n\n----\nSent by the Flow evaluation pipeline.",
+        "html": "=<h2>Evaluation failed</h2><ul><li><strong>Dataset:</strong> {{ $json.repo_name }}</li><li><strong>Splits:</strong> {{ JSON.stringify($json.splits) }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Status:</strong> {{ $json.status }}</li><li><strong>Error:</strong> {{ $json.error_message }}</li></ul><p>Please check the evaluation service logs.</p><hr><p><small>Sent by the Flow evaluation pipeline.</small></p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2016,
+        496
+      ],
+      "id": "64fc5027-4cd2-4999-bb44-b72617ae0d81",
+      "name": "Email: Failure",
+      "webhookId": "5733b00d-5cc0-4383-9065-f5a4c971174c",
+      "credentials": {
+        "smtp": {
+          "id": "SU1oQTKpVo8gu007",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook: Receive Evaluation Request": {
+      "main": [
+        [
+          {
+            "node": "Respond: 202 Accepted",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Evaluation Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Evaluation Params": {
+      "main": [
+        [
+          {
+            "node": "POST: Start Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Start Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Extract Job ID & Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Job ID & Email": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "GET: Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET: Check Status": {
+      "main": [
+        [
+          {
+            "node": "Merge Status Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Status Context": {
+      "main": [
+        [
+          {
+            "node": "Job finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job finished?": {
+      "main": [
+        [
+          {
+            "node": "Success or Failure?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success or Failure?": {
+      "main": [
+        [
+          {
+            "node": "Email: Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9aea917d-fe92-4fce-80e9-1e14a2ac1a4d",
+  "meta": {
+    "instanceId": "8d6eb32ec88ce261ffb0a6b1cf9c910467c78d3ae7ffe44f468789a71500ae8d"
+  },
+  "id": "lr64rY4Bw0LrjGI9",
+  "tags": [
+    {
+      "updatedAt": "2026-05-28T16:28:29.847Z",
+      "createdAt": "2026-05-28T16:28:29.847Z",
+      "id": "A4NbWr7EciCmD6jg",
+      "name": "flow"
+    }
+  ]
+}

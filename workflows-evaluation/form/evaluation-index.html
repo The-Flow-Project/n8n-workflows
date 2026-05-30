@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow Evaluation</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+
+  <header class="site-header">
+    <a class="site-header-left" href="https://flow-project.net" target="_blank" rel="noopener">
+      <img src="TheFlow_white.png" alt="The Flow" class="site-logo" />
+      <div class="site-header-divider"></div>
+      <span class="site-header-subtitle">Evaluation</span>
+    </a>
+    <div class="site-header-right">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">flow-project.net</a>
+    </div>
+  </header>
+
+  <div class="beta-banner">
+    <strong>Beta</strong> — This service is currently in beta. Expect changes and potential instability.
+  </div>
+
+  <main class="site-main">
+    <div class="page">
+      <div class="page-header">
+        <h1>Flow Evaluation</h1>
+        <p>Run evaluation on a HuggingFace dataset with inference output.</p>
+      </div>
+
+      <form id="evaluation-form">
+
+        <div class="card">
+          <div class="card-title">Authentication</div>
+          <div class="field">
+            <label for="api_key">Webhook API key <span class="tooltip-icon" data-tip="The secret API key required to authenticate your n8n webhook request.">?</span></label>
+            <input type="password" id="api_key" name="api_key" placeholder="Enter your webhook API key" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">HuggingFace Dataset</div>
+          <div class="field">
+            <label for="huggingface_repo_name">Dataset repository <span class="hint">owner/repo-name</span><span class="tooltip-icon" data-tip="HuggingFace dataset repository containing inference output to evaluate.">?</span></label>
+            <input type="text" id="huggingface_repo_name" name="huggingface_repo_name" placeholder="my-org/my-dataset-with-inference" />
+          </div>
+          <div class="field">
+            <label for="hf_token">HuggingFace token <span class="tooltip-icon" data-tip="A HuggingFace access token with permission to read the dataset repository.">?</span></label>
+            <input type="password" id="hf_token" name="huggingface_token" placeholder="hf_…" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Evaluation Settings</div>
+          <div class="field">
+            <label for="splits">Splits <span class="hint">comma-separated</span><span class="tooltip-icon" data-tip="Dataset splits to evaluate, for example test or train,test.">?</span></label>
+            <input type="text" id="splits" name="splits" value="test" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Notification</div>
+          <div class="field">
+            <label for="notify_email">Email address for status updates <span class="hint">optional</span></label>
+            <input type="email" id="notify_email" name="notify_email" placeholder="you@example.com" />
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">Start Evaluation</button>
+        <div class="status-box" id="status-box"></div>
+      </form>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>© University of Bern 2026</span>
+    <div class="site-footer-links">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">The Flow Project</a>
+      <a href="https://github.com/the-flow-project" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://flow-project.net/impressum" target="_blank" rel="noopener">Impressum</a>
+    </div>
+  </footer>
+
+<script>
+  // Local test URL while the n8n webhook node is listening:
+  const WEBHOOK_URL = 'http://localhost:5678/webhook-test/evaluation-start';
+
+  // Activated local workflow:
+  //const WEBHOOK_URL = 'http://localhost:5678/webhook/evaluation-start';
+
+  // Production URL — replace with deployed n8n webhook URL:
+  //const WEBHOOK_URL = 'https://preprocess.flow-project.net/webhook/evaluation-start';
+
+  function showStatus(type, message) {
+    const box = document.getElementById('status-box');
+    box.className = `status-box ${type}`;
+    box.textContent = message;
+    box.style.display = 'block';
+  }
+
+  const gv = (form, name) => form.querySelector(`[name="${name}"]`)?.value?.trim() ?? '';
+
+  function buildBody(form) {
+    return {
+      huggingface_repo_name: gv(form, 'huggingface_repo_name'),
+      huggingface_token: gv(form, 'huggingface_token'),
+      splits: gv(form, 'splits').split(',').map(s => s.trim()).filter(Boolean),
+      notify_email: gv(form, 'notify_email'),
+    };
+  }
+
+  document.getElementById('evaluation-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('submit-btn');
+    const apiKey = document.getElementById('api_key').value.trim();
+
+    if (!apiKey) {
+      showStatus('error', 'Please enter the webhook API key.');
+      return;
+    }
+
+    if (!gv(form, 'huggingface_repo_name') || !gv(form, 'huggingface_token')) {
+      showStatus('error', 'Please fill in dataset repository and HuggingFace token.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    showStatus('info', 'Sending request to evaluation pipeline…');
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': apiKey,
+        },
+        body: JSON.stringify(buildBody(form)),
+      });
+
+      if (res.ok) {
+        showStatus('success', 'Evaluation job submitted successfully. You will receive an email if notifications are enabled.');
+        btn.textContent = 'Submitted';
+      } else {
+        const text = await res.text();
+        showStatus('error', `Error ${res.status}: ${text}`);
+        btn.disabled = false;
+        btn.textContent = 'Start Evaluation';
+      }
+    } catch (err) {
+      showStatus('error', `Network error: ${err.message}`);
+      btn.disabled = false;
+      btn.textContent = 'Start Evaluation';
+    }
+  });
+</script>
+</body>
+</html>
