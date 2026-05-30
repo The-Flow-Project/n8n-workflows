@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        0,
-        0
+        336,
+        -256
       ],
-      "id": "a6190d3a-dada-482f-941a-6e36da83b433",
+      "id": "00007301-8dd6-4d40-a8be-7c1a5791a712",
       "name": "Sticky Note"
     },
     {
@@ -29,10 +29,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        304
+        304,
+        144
       ],
-      "id": "6b32a5c0-dd01-4a59-928c-b69c16600ef4",
+      "id": "133a19b8-b378-4816-8603-5589d5693b98",
       "name": "Webhook: Receive RawXML Merge Request",
       "webhookId": "rawxml-merge-webhook",
       "credentials": {
@@ -53,10 +53,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        224,
-        208
+        560,
+        -48
       ],
-      "id": "c1ce782e-f480-4a90-9b26-4e6a88db54c4",
+      "id": "ee641d35-8b40-43ea-81f2-3d58773eb8f8",
       "name": "Respond: 202 Accepted"
     },
     {
@@ -76,10 +76,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        224,
-        400
+        560,
+        144
       ],
-      "id": "e8c5ae98-e694-48d1-b20a-87b94dafe9a4",
+      "id": "a7d889bc-84cf-4e5f-bdf8-7349bfe6e84e",
       "name": "Build RawXML Merge Params"
     },
     {
@@ -128,10 +128,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        448,
-        400
+        784,
+        144
       ],
-      "id": "c5b6024c-c419-478c-ad2b-bb2d3c080475",
+      "id": "e9297a64-39e6-419d-a49e-9422ea26cbc1",
       "name": "POST: Start RawXML Merge",
       "credentials": {
         "httpHeaderAuth": {
@@ -181,10 +181,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        672,
-        400
+        1008,
+        144
       ],
-      "id": "9d1daa81-9ddb-4e6d-82a0-69a14de30276",
+      "id": "5d23f1c1-dc5f-49cb-b15b-fdb7265488da",
       "name": "Extract Job ID & Email"
     },
     {
@@ -194,10 +194,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        896,
-        400
+        1232,
+        144
       ],
-      "id": "5e7925c5-4290-4742-bcd2-5a84d11e62f1",
+      "id": "7c6249aa-7b1b-4714-a6e9-0b0bd56fe5cb",
       "name": "Wait 30s",
       "webhookId": "638cd781-8111-42ce-8622-ae076f940c2a"
     },
@@ -213,10 +213,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1120,
-        336
+        1456,
+        80
       ],
-      "id": "f751d468-a681-4c5d-94fa-56eb6d3e33e4",
+      "id": "2a3cad4d-3e6b-48b1-b66e-51f4a67453a1",
       "name": "GET: Check Status",
       "credentials": {
         "httpHeaderAuth": {
@@ -296,10 +296,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1344,
-        336
+        1680,
+        80
       ],
-      "id": "c292788b-c473-4ace-908e-96a288d41499",
+      "id": "b7e24ad9-b9ac-4a1b-ac5a-67d653dc6312",
       "name": "Merge Status Context"
     },
     {
@@ -347,10 +347,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1568,
-        400
+        1904,
+        144
       ],
-      "id": "5ea34d29-abfc-475b-8c12-566954570a8b",
+      "id": "baba2647-d072-4853-bf74-d530926a9b1b",
       "name": "Job finished?"
     },
     {
@@ -380,10 +380,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1792,
-        400
+        2128,
+        144
       ],
-      "id": "2ed591a2-7d4a-403a-9d79-a43e252ff284",
+      "id": "0784eab8-a421-4d13-a271-82dd52da384f",
       "name": "Success or Failure?"
     },
     {
@@ -401,12 +401,18 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        2016,
-        304
+        2352,
+        48
       ],
-      "id": "b4cc0a20-491d-433c-b1df-ef713ac0afa4",
+      "id": "c313169d-f4fb-4957-beb4-498e8618595d",
       "name": "Email: Success",
-      "webhookId": "0ef87b04-d325-4ac7-85e1-c503451620f4"
+      "webhookId": "0ef87b04-d325-4ac7-85e1-c503451620f4",
+      "credentials": {
+        "smtp": {
+          "id": "SU1oQTKpVo8gu007",
+          "name": "SMTP account"
+        }
+      }
     },
     {
       "parameters": {
@@ -423,12 +429,18 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        2016,
-        496
+        2352,
+        240
       ],
-      "id": "df04c37a-6eb2-436a-acee-bfc7a1ff6f44",
+      "id": "f08859fd-adb2-45e8-b2dc-5d251add352d",
       "name": "Email: Failure",
-      "webhookId": "5733b00d-5cc0-4383-9065-f5a4c971174c"
+      "webhookId": "5733b00d-5cc0-4383-9065-f5a4c971174c",
+      "credentials": {
+        "smtp": {
+          "id": "SU1oQTKpVo8gu007",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -520,11 +532,6 @@
             "node": "Respond: 202 Accepted",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Build RawXML Merge Params",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -550,6 +557,17 @@
           }
         ]
       ]
+    },
+    "Respond: 202 Accepted": {
+      "main": [
+        [
+          {
+            "node": "Build RawXML Merge Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -557,12 +575,12 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "rawxml-merge-v1",
+  "versionId": "113f7640-59f2-4b82-816f-73d76bf659d4",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8d6eb32ec88ce261ffb0a6b1cf9c910467c78d3ae7ffe44f468789a71500ae8d"
   },
-  "id": "rawxml-merge-pipeline-v1",
+  "id": "vrQvxEHSdTC1HKUw",
   "tags": [
     {
       "updatedAt": "2026-05-28T16:28:29.847Z",
