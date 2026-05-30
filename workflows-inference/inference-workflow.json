@@ -422,7 +422,13 @@
       ],
       "id": "b4cc0a20-491d-433c-b1df-ef713ac0afa4",
       "name": "Email: Success",
-      "webhookId": "0ef87b04-d325-4ac7-85e1-c503451620f4"
+      "webhookId": "0ef87b04-d325-4ac7-85e1-c503451620f4",
+      "credentials": {
+        "smtp": {
+          "id": "SU1oQTKpVo8gu007",
+          "name": "SMTP account"
+        }
+      }
     },
     {
       "parameters": {
@@ -444,7 +450,13 @@
       ],
       "id": "df04c37a-6eb2-436a-acee-bfc7a1ff6f44",
       "name": "Email: Failure",
-      "webhookId": "5733b00d-5cc0-4383-9065-f5a4c971174c"
+      "webhookId": "5733b00d-5cc0-4383-9065-f5a4c971174c",
+      "credentials": {
+        "smtp": {
+          "id": "SU1oQTKpVo8gu007",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -573,7 +585,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "6b710a6b-d501-4419-a203-ca61bfddb746",
+  "versionId": "0b406f9d-e063-4ff9-9dda-e6ee49b5e2d3",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8d6eb32ec88ce261ffb0a6b1cf9c910467c78d3ae7ffe44f468789a71500ae8d"
