@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow Write RawXML</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+
+  <header class="site-header">
+    <a class="site-header-left" href="https://flow-project.net" target="_blank" rel="noopener">
+      <img src="TheFlow_white.png" alt="The Flow" class="site-logo" />
+      <div class="site-header-divider"></div>
+      <span class="site-header-subtitle">RawXML Merge</span>
+    </a>
+    <div class="site-header-right">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">flow-project.net</a>
+    </div>
+  </header>
+
+  <div class="beta-banner">
+    <strong>Beta</strong> — This service is currently in beta. Expect changes and potential instability.
+  </div>
+
+  <main class="site-main">
+    <div class="page">
+      <div class="page-header">
+        <h1>Flow RawXML Merge</h1>
+        <p>Merge TrOCR inference results back into a raw PageXML HuggingFace dataset and push the result to a HuggingFace Hub dataset.</p>
+      </div>
+
+      <form id="rawxml-merge-form">
+
+        <div class="card">
+          <div class="card-title">Authentication</div>
+          <div class="field">
+            <label for="api_key">Webhook API key <span class="tooltip-icon" data-tip="The secret API key required to authenticate your n8n webhook request.">?</span></label>
+            <input type="password" id="api_key" name="api_key" placeholder="Enter your webhook API key" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">HuggingFace Repositories</div>
+
+          <div class="field">
+            <label for="raw_xml_repo">Raw XML dataset repository <span class="hint">owner/repo-name</span><span class="tooltip-icon" data-tip="Input HuggingFace dataset containing the raw PageXML.">?</span></label>
+            <input type="text" id="raw_xml_repo" name="raw_xml_repo" placeholder="my-org/my-raw-xml-dataset" />
+          </div>
+
+          <div class="field">
+            <label for="inference_repo">Inference dataset repository <span class="hint">owner/repo-name</span><span class="tooltip-icon" data-tip="HuggingFace dataset containing inference output that should be written back into the raw XML.">?</span></label>
+            <input type="text" id="inference_repo" name="inference_repo" placeholder="my-org/my-dataset-with-inference" />
+          </div>
+
+          <div class="field">
+            <label for="output_repo_name">Output dataset repository <span class="hint">owner/repo-name</span><span class="tooltip-icon" data-tip="Target HuggingFace dataset for the raw XML with inference results inserted.">?</span></label>
+            <input type="text" id="output_repo_name" name="output_repo_name" placeholder="my-org/my-raw-xml-with-inference" />
+          </div>
+
+          <div class="field">
+            <label for="hf_token">HuggingFace token <span class="tooltip-icon" data-tip="A HuggingFace access token with permissions for the output repository.">?</span></label>
+            <input type="password" id="hf_token" name="huggingface_token" placeholder="hf_…" />
+          </div>
+
+          <div class="field">
+            <label class="checkbox-row">
+              <input type="checkbox" name="private_repo" id="private_repo" checked />
+              Private output repository
+              <span class="tooltip-icon" data-tip="If checked, the output dataset repository is created as private.">?</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Upload Options</div>
+
+          <div class="field">
+            <label for="upload_mode">Upload mode</label>
+            <select id="upload_mode" name="upload_mode">
+              <option value="new_repo" selected>new_repo</option>
+              <option value="overwrite">overwrite</option>
+              <option value="append">append</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="checkbox-row">
+              <input type="checkbox" name="allow_source_repo_update" />
+              Allow source repo update
+              <span class="tooltip-icon" data-tip="If checked, the service may update the source repository if supported.">?</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Notification</div>
+          <div class="field">
+            <label for="notify_email">Email address for status updates <span class="hint">optional</span></label>
+            <input type="email" id="notify_email" name="notify_email" placeholder="you@example.com" />
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">Start RawXML Merge</button>
+        <div class="status-box" id="status-box"></div>
+      </form>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>© University of Bern 2026</span>
+    <div class="site-footer-links">
+      <a href="https://flow-project.net" target="_blank" rel="noopener">The Flow Project</a>
+      <a href="https://github.com/the-flow-project" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://flow-project.net/impressum" target="_blank" rel="noopener">Impressum</a>
+    </div>
+  </footer>
+
+<script>
+  // Local test URL while the n8n webhook node is listening:
+  const WEBHOOK_URL = 'http://localhost:5678/webhook-test/rawxml-merge-start';
+
+  // Activated local workflow:
+  //const WEBHOOK_URL = 'http://localhost:5678/webhook/rawxml-merge-start';
+
+  // Production URL — replace with deployed n8n webhook URL:
+  //const WEBHOOK_URL = 'https://preprocess.flow-project.net/webhook/rawxml-merge-start';
+
+  function showStatus(type, message) {
+    const box = document.getElementById('status-box');
+    box.className = `status-box ${type}`;
+    box.textContent = message;
+    box.style.display = 'block';
+  }
+
+  const gv = (form, name) => form.querySelector(`[name="${name}"]`)?.value?.trim() ?? '';
+  const gc = (form, name) => Boolean(form.querySelector(`[name="${name}"]`)?.checked);
+
+  function buildBody(form) {
+    return {
+      raw_xml_repo: gv(form, 'raw_xml_repo'),
+      inference_repo: gv(form, 'inference_repo'),
+      huggingface_token: gv(form, 'huggingface_token'),
+      output_repo_name: gv(form, 'output_repo_name'),
+      private_repo: gc(form, 'private_repo'),
+      upload_mode: gv(form, 'upload_mode') || 'new_repo',
+      allow_source_repo_update: gc(form, 'allow_source_repo_update'),
+      notify_email: gv(form, 'notify_email'),
+    };
+  }
+
+  document.getElementById('rawxml-merge-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('submit-btn');
+    const apiKey = document.getElementById('api_key').value.trim();
+
+    if (!apiKey) {
+      showStatus('error', 'Please enter the webhook API key.');
+      return;
+    }
+
+    if (!gv(form, 'raw_xml_repo') || !gv(form, 'inference_repo') || !gv(form, 'output_repo_name') || !gv(form, 'huggingface_token')) {
+      showStatus('error', 'Please fill in raw XML repo, inference repo, output repo, and HuggingFace token.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    showStatus('info', 'Sending request to RawXML merge pipeline…');
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': apiKey,
+        },
+        body: JSON.stringify(buildBody(form)),
+      });
+
+      if (res.ok) {
+        showStatus('success', 'RawXML merge job submitted successfully. You will receive an email if notifications are enabled.');
+        btn.textContent = 'Submitted';
+      } else {
+        const text = await res.text();
+        showStatus('error', `Error ${res.status}: ${text}`);
+        btn.disabled = false;
+        btn.textContent = 'Start RawXML Merge';
+      }
+    } catch (err) {
+      showStatus('error', `Network error: ${err.message}`);
+      btn.disabled = false;
+      btn.textContent = 'Start RawXML Merge';
+    }
+  });
+</script>
+</body>
+</html>
