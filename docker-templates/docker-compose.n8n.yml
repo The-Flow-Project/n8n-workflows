@@ -5,19 +5,22 @@
 # See docker-compose.traefik-proxy.yml in this folder
 
 # Required .env variables:
-#   DOMAIN_NAME         - domain, which is used for this environment (e.g. example.com)
-#   SUBDOMAIN           - subdomain, where n8n is reachable (e.g. n8n)
-#   SUBDOMAIN_WEBHOOK   - subdomain, where the n8n webhooks are reachable
-#   SUBDOMAIN_MINIO     - subdomain, where MinIO S3 API is publicly reachable (e.g. minio)
-#   SUBDOMAIN_FORM      - subdomain, where the preprocessing form is served (e.g. form)
-#   SUBDOMAIN_MAIL      - subdomain for the mail server hostname (e.g. mail)
-#   ENCRYPTION_KEY      - key to encrypt the n8n content (use `openssl rand -hex 32`)
-#   GENERIC_TIMEZONE    - define timezone of the n8n environment (e.g. Europe/Berlin)
-#   MINIO_ENDPOINT      - endpoint, where minio is reachable internally (e.g. minio:9000)
-#   MINIO_ROOT_USER     - username for the minio root user
-#   MINIO_ROOT_PASSWORD - minio root password
-#   BUCKET_NAME         - name of the created bucket (will be created if missing)
-#   SMTP_SENDER         - local part of the sender address (e.g. noreply → noreply@example.com)
+#   DOMAIN_NAME                       - domain, which is used for this environment (e.g. example.com)
+#   SUBDOMAIN                         - subdomain, where n8n is reachable (e.g. n8n)
+#   SUBDOMAIN_WEBHOOK                 - subdomain, where the n8n webhooks are reachable
+#   SUBDOMAIN_MINIO                   - subdomain, where MinIO S3 API is publicly reachable (e.g. minio)
+#   SUBDOMAIN_PREPROCESSING_FORM      - subdomain, where the preprocessing form is served (e.g. form)
+#   SUBDOMAIN_INFERENCE_FORM          - subdomain, where the inference forms are served (e.g. inference)
+#   SUBDOMAIN_MAIL                    - subdomain for the mail server hostname (e.g. mail)
+#   ENCRYPTION_KEY                    - key to encrypt the n8n content (use `openssl rand -hex 32`)
+#   GENERIC_TIMEZONE                  - define timezone of the n8n environment (e.g. Europe/Berlin)
+#   MINIO_ENDPOINT                    - endpoint, where minio is reachable internally (e.g. minio:9000)
+#   MINIO_ROOT_USER                   - username for the minio root user
+#   MINIO_ROOT_PASSWORD               - minio root password
+#   BUCKET_NAME                       - name of the created bucket (will be created if missing)
+#   SMTP_SENDER                       - local part of the sender address (e.g. noreply → noreply@example.com)
+#   FRONTEND_PREPROCESSING_DOCKERFILE - build context for the preprocessing form
+#   FRONTEND_INFERENCE_DOCKERFILE     - build context for the inference forms
 
 services:
   n8n:
@@ -31,7 +34,7 @@ services:
       - N8N_PROTOCOL=https
       - WEBHOOK_URL=https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME}/
       - N8N_DEFAULT_CORS=TRUE
-      - N8N_CORS_ALLOW_ORIGIN=https://${SUBDOMAIN}.${DOMAIN_NAME},https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME},https://${SUBDOMAIN_FORM}.${DOMAIN_NAME}
+      - N8N_CORS_ALLOW_ORIGIN=https://${SUBDOMAIN}.${DOMAIN_NAME},https://${SUBDOMAIN_WEBHOOK}.${DOMAIN_NAME},https://${SUBDOMAIN_PREPROCESSING_FORM}.${DOMAIN_NAME},https://${SUBDOMAIN_INFERENCE_FORM}.${DOMAIN_NAME}
 
       # --- Security ---
       - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
@@ -164,14 +167,14 @@ services:
   # ── Preprocessing form (static HTML, belongs to n8n stack) ───────────
   preprocessing-form:
     build:
-      context: ${FRONTEND_DOCKERFILE}
+      context: ${FRONTEND_PREPROCESSING_DOCKERFILE}
       dockerfile: Dockerfile
     container_name: preprocessing-form
     restart: unless-stopped
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
-      - traefik.http.routers.preprocessing-form.rule=Host(`${SUBDOMAIN_FORM}.${DOMAIN_NAME}`)
+      - traefik.http.routers.preprocessing-form.rule=Host(`${SUBDOMAIN_PREPROCESSING_FORM}.${DOMAIN_NAME}`)
       - traefik.http.routers.preprocessing-form.entrypoints=websecure
       - traefik.http.routers.preprocessing-form.tls.certresolver=letsencrypt
       - traefik.http.services.preprocessing-form.loadbalancer.server.port=80
@@ -180,19 +183,19 @@ services:
 
   inference-form:
     build:
-      context: ..
-      dockerfile: Dockerfile.inference-forms
+      context: ${FRONTEND_INFERENCE_DOCKERFILE}
+      dockerfile: frontend-inference-forms/Dockerfile
     container_name: inference-form
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.docker.network=traefik-public
+      - traefik.docker.network=traefik-net
       - traefik.http.routers.inference-form.rule=Host(`${SUBDOMAIN_INFERENCE_FORM}.${DOMAIN_NAME}`)
       - traefik.http.routers.inference-form.entrypoints=websecure
       - traefik.http.routers.inference-form.tls.certresolver=letsencrypt
       - traefik.http.services.inference-form.loadbalancer.server.port=80
     networks:
-      - traefik-public
+      - traefik-net
 
 # ── Volumes ──────────────────────────────────────────────────────────
 volumes:
