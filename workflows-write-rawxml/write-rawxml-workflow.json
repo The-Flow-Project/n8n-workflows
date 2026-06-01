@@ -85,7 +85,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8001/xml-merge/start",
+        "url": "https://inference-service.flow-project.net/xml-merge/start",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -203,7 +203,7 @@
     },
     {
       "parameters": {
-        "url": "=http://host.docker.internal:8001/xml-merge/status/{{ $json.process_id }}",
+        "url": "=https://inference-service.flow-project.net/xml-merge/status/{{ $json.process_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {

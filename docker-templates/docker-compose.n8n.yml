@@ -178,6 +178,22 @@ services:
     networks:
       - traefik-public
 
+  inference-form:
+    build:
+      context: ..
+      dockerfile: Dockerfile.inference-forms
+    container_name: inference-form
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.inference-form.rule=Host(`${SUBDOMAIN_INFERENCE_FORM}.${DOMAIN_NAME}`)
+      - traefik.http.routers.inference-form.entrypoints=websecure
+      - traefik.http.routers.inference-form.tls.certresolver=letsencrypt
+      - traefik.http.services.inference-form.loadbalancer.server.port=80
+    networks:
+      - traefik-public
+
 # ── Volumes ──────────────────────────────────────────────────────────
 volumes:
   n8n-data:

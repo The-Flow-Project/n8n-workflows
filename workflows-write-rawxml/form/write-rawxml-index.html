@@ -124,13 +124,13 @@
 
 <script>
   // Local test URL while the n8n webhook node is listening:
-  const WEBHOOK_URL = 'http://localhost:5678/webhook-test/rawxml-merge-start';
+  //const WEBHOOK_URL = 'http://localhost:5678/webhook-test/rawxml-merge-start';
 
   // Activated local workflow:
   //const WEBHOOK_URL = 'http://localhost:5678/webhook/rawxml-merge-start';
 
   // Production URL — replace with deployed n8n webhook URL:
-  //const WEBHOOK_URL = 'https://preprocess.flow-project.net/webhook/rawxml-merge-start';
+  const WEBHOOK_URL = 'https://webhook.flow-project.net/webhook/rawxml-merge-start';
 
   function showStatus(type, message) {
     const box = document.getElementById('status-box');

@@ -85,7 +85,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8001/inference/start",
+        "url": "https://inference-service.flow-project.net/inference/start",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -219,7 +219,7 @@
     },
     {
       "parameters": {
-        "url": "=http://host.docker.internal:8001/inference/status/{{ $json.process_id }}",
+        "url": "=https://inference-service.flow-project.net/inference/status/{{ $json.process_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
