@@ -267,7 +267,10 @@
           </div>
         </div>
 
-        <button type="submit" class="submit-btn" id="submit-btn">Start Preprocessing</button>
+        <div class="button-group">
+          <button type="submit" class="submit-btn" id="submit-btn">Start Preprocessing</button>
+          <button type="button" class="reset-btn" id="reset-btn" onclick="resetForm()" style="display:none">Reset</button>
+        </div>
 
         <div class="status-box" id="status-box"></div>
 
@@ -304,6 +307,10 @@
     document.getElementById('btn-url').classList.toggle('active',  mode === 'url');
     document.getElementById('btn-file').classList.toggle('active', mode === 'file');
     document.getElementById('btn-hf').classList.toggle('active',   mode === 'hf');
+    // clear data source inputs when switching modes
+    document.getElementById('zip_url').value = '';
+    document.getElementById('zipfile').value = '';
+    document.getElementById('hf_source_repo').value = '';
     // auto-switch export_mode default to match the typical use per source type
     const exportMode = document.getElementById('export_mode');
     if (mode === 'hf' && prev !== 'hf') exportMode.value = 'line';
@@ -322,6 +329,17 @@
     box.className = `status-box ${type}`;
     box.textContent = message;
     box.style.display = 'block';
+  }
+
+  function resetForm() {
+    const form = document.getElementById('preprocess-form');
+    const btn = document.getElementById('submit-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    form.reset();
+    btn.disabled = false;
+    btn.textContent = 'Start Preprocessing';
+    resetBtn.style.display = 'none';
+    document.getElementById('status-box').style.display = 'none';
   }
 
   // Builds the request body as FormData. The only mode-specific part is the source field.
@@ -351,7 +369,7 @@
     fd.append('split_seed',                      gv('split_seed'));
     fd.append('split_shuffle',                   gc('split_shuffle'));
     fd.append('segment',                         gv('segment'));
-    fd.append('segmenter_model_names',           gv('segmenter_model_names'));
+    gv('segmenter_model_names').split(',').map(m => m.trim()).filter(m => m).forEach(model => fd.append('segmenter_model_names', model));
     fd.append('segmenter_batch_sizes',           gv('segmenter_batch_sizes'));
     fd.append('load_existing_segmentation',      gc('load_existing_segmentation'));
     fd.append('order_lines',                     gc('order_lines'));
@@ -391,6 +409,7 @@
         showStatus('success',
           `Job submitted successfully. You will receive an email at ${form.querySelector('[name="notify_email"]').value} when preprocessing is done.`);
         btn.textContent = 'Submitted';
+        document.getElementById('reset-btn').style.display = 'inline-block';
       } else {
         const text = await res.text();
         showStatus('error', `Error ${res.status}: ${text}`);
