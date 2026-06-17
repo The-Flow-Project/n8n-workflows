@@ -343,9 +343,15 @@ input[type="file"] {
 .tooltip-icon:hover::after,
 .tooltip-icon:hover::before { opacity: 1; }
 
-/* ── Submit button ───────────────────────────────────────────────────── */
-.submit-btn {
-  width: 100%;
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.submit-btn,
+.reset-btn {
   padding: 0.8rem;
   background: var(--color-accent);
   color: #fff;
@@ -355,11 +361,20 @@ input[type="file"] {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-  margin-top: 0.5rem;
+}
+
+.submit-btn {
+  flex: 1;
+}
+
+.reset-btn {
+  flex: 0 1 120px;
+  background: var(--color-text-muted);
 }
 
 .submit-btn:hover { background: var(--color-accent-hover); }
 .submit-btn:disabled { background: var(--color-accent-disabled); cursor: not-allowed; }
+.reset-btn:hover { background: #64748b; }
 
 /* ── Status messages ─────────────────────────────────────────────────── */
 .status-box {
