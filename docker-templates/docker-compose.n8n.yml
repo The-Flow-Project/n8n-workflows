@@ -168,7 +168,7 @@ services:
   preprocessing-form:
     build:
       context: ${FRONTEND_PREPROCESSING_DOCKERFILE}
-      dockerfile: Dockerfile
+      dockerfile: frontend-preprocessing-form/Dockerfile
     container_name: preprocessing-form
     restart: unless-stopped
     labels:

@@ -8,6 +8,10 @@ COPY workflows-inference/form/favicon.ico               /usr/share/nginx/html/fa
 COPY workflows-inference/form/TheFlow_black.png         /usr/share/nginx/html/TheFlow_black.png
 COPY workflows-inference/form/TheFlow_white.png         /usr/share/nginx/html/TheFlow_white.png
 
+# AIDEV-NOTE: default runtime config (webhookBase). Forms fetch /config.js (root-absolute);
+# this ships the public-domain default so the domain deployment works unchanged.
+COPY frontend-common/config.js                          /usr/share/nginx/html/config.js
+
 # AIDEV-NOTE: each form's HTML is renamed to index.html so nginx serves it
 # as the directory default at its subpath.
 COPY workflows-inference/form/inference-index.html      /usr/share/nginx/html/workflows-inference/index.html

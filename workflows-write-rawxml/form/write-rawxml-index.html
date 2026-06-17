@@ -122,15 +122,13 @@
     </div>
   </footer>
 
+<!-- AIDEV-NOTE: runtime config injected by the container (see frontend-common/render-config.sh) -->
+<script src="/config.js"></script>
 <script>
-  // Local test URL while the n8n webhook node is listening:
-  //const WEBHOOK_URL = 'http://localhost:5678/webhook-test/rawxml-merge-start';
-
-  // Activated local workflow:
-  //const WEBHOOK_URL = 'http://localhost:5678/webhook/rawxml-merge-start';
-
-  // Production URL — replace with deployed n8n webhook URL:
-  const WEBHOOK_URL = 'https://webhook.flow-project.net/webhook/rawxml-merge-start';
+  // AIDEV-NOTE: webhook base comes from /config.js (window.APP_CONFIG.webhookBase) so the same
+  //            HTML works for domain and local/IP deployments; falls back to the public domain.
+  const WEBHOOK_BASE = (window.APP_CONFIG && window.APP_CONFIG.webhookBase) || 'https://webhook.flow-project.net';
+  const WEBHOOK_URL  = `${WEBHOOK_BASE}/webhook/rawxml-merge-start`;
 
   function showStatus(type, message) {
     const box = document.getElementById('status-box');
