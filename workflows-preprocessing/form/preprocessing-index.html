@@ -284,10 +284,14 @@
     </div>
   </footer>
 
+<!-- AIDEV-NOTE: runtime config injected by the container (see frontend-common/render-config.sh) -->
+<script src="/config.js"></script>
 <script>
-  // AIDEV-NOTE: webhook URLs — replace with your actual n8n production webhook URLs
-  const WEBHOOK_URL    = 'https://webhook.flow-project.net/webhook/preprocess';
-  const WEBHOOK_HF_URL = 'https://webhook.flow-project.net/webhook/preprocess-hf';
+  // AIDEV-NOTE: webhook base comes from /config.js (window.APP_CONFIG.webhookBase) so the same
+  //            HTML works for domain and local/IP deployments; falls back to the public domain.
+  const WEBHOOK_BASE   = (window.APP_CONFIG && window.APP_CONFIG.webhookBase) || 'https://webhook.flow-project.net';
+  const WEBHOOK_URL    = `${WEBHOOK_BASE}/webhook/preprocess`;
+  const WEBHOOK_HF_URL = `${WEBHOOK_BASE}/webhook/preprocess-hf`;
 
   let zipMode = 'url';
 

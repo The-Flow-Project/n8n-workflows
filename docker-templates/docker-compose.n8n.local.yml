@@ -1,0 +1,169 @@
+# docker-compose.n8n.local.yml
+#
+# LOCAL / no-domain variant of docker-compose.n8n.yml.
+# Reach every service by the server's LAN IP over plain HTTP — no domain, no
+# subdomains, no Traefik, no TLS. Intended for a trusted internal network.
+#
+#   n8n            -> http://<SERVER_IP>:5678
+#   MinIO console  -> http://<SERVER_IP>:9001
+#   MinIO S3 API   -> http://<SERVER_IP>:9000
+#   forms (all)    -> http://<SERVER_IP>/         (landing menu + /workflows-*/ sub-paths)
+#
+# This file does NOT replace the domain-based stack — run whichever you need:
+#   domain : docker compose -f docker-templates/docker-compose.n8n.yml up -d   (needs Traefik)
+#   local  : docker compose -f docker-templates/docker-compose.n8n.local.yml up -d
+#
+# Required .env variables: see docker-templates/.env.local.example
+#   SERVER_IP, ENCRYPTION_KEY, GENERIC_TIMEZONE, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD,
+#   BUCKET_NAME, DOMAIN_NAME, SUBDOMAIN_MAIL, SMTP_SENDER
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # --- Public URL: the LAN IP the browser actually uses ---
+      - N8N_HOST=${SERVER_IP}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      # AIDEV-NOTE: over plain HTTP n8n's secure-only cookie is dropped by the browser,
+      #            which logs you straight back out. Must be false for non-HTTPS access.
+      - N8N_SECURE_COOKIE=false
+      - WEBHOOK_URL=http://${SERVER_IP}:5678/
+      - N8N_DEFAULT_CORS=TRUE
+      - N8N_CORS_ALLOW_ORIGIN=http://${SERVER_IP}
+
+      # --- Security ---
+      - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+
+      # --- Admin ---
+      - N8N_USER_MANAGEMENT_DISABLED=false
+      - NODE_ENV=production
+      - N8N_PAYLOAD_SIZE_MAX=128
+      - N8N_TRUST_PROXY=true
+
+      # --- Timezone ---
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${GENERIC_TIMEZONE}
+
+      # --- SMTP (outbound mail via internal mailserver) ---
+      - N8N_EMAIL_MODE=smtp
+      - N8N_SMTP_HOST=mailserver
+      - N8N_SMTP_PORT=587
+      - N8N_SMTP_SSL=false
+      - N8N_SMTP_SENDER=${SMTP_SENDER}@${DOMAIN_NAME}
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./local-files:/files
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      # AIDEV-NOTE: n8n also joins the shared flow-apis network so workflows can call
+      #            local API containers (other compose stacks) by their container name.
+      - n8n-local
+      - flow-apis
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # AIDEV-NOTE: embed the LAN URL so presigned/public links point at the reachable host
+      MINIO_SERVER_URL: http://${SERVER_IP}:9000
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - n8n-local
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ENDPOINT: minio:9000
+      BUCKET_NAME: ${BUCKET_NAME}
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Initializing MinIO...';
+      /usr/bin/mc alias set myminio http://$${MINIO_ENDPOINT} $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc mb myminio/$${BUCKET_NAME} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/$${BUCKET_NAME};
+      echo 'MinIO initialization complete (bucket policy: public-read)';
+      exit 0;
+      "
+    networks:
+      - n8n-local
+
+  # ── Send-only SMTP relay (Postfix + OpenDKIM) ────────────────────────
+  # AIDEV-NOTE: send-only relay; internal use only (no published port). The sender
+  # domain is still a real domain so outgoing mail has a valid From address.
+  mailserver:
+    image: boky/postfix:latest
+    container_name: mailserver
+    restart: unless-stopped
+    environment:
+      - HOSTNAME=${SUBDOMAIN_MAIL}.${DOMAIN_NAME}
+      - ALLOWED_SENDER_DOMAINS=${DOMAIN_NAME}
+      - DKIM_AUTOGENERATE=1
+    volumes:
+      - mailserver-opendkim-keys:/etc/opendkim/keys
+    networks:
+      - n8n-local
+
+  # ── All forms behind one entry point (landing menu + /workflows-*/ sub-paths) ──
+  forms:
+    build:
+      context: ..
+      dockerfile: frontend-forms/Dockerfile
+    container_name: forms
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      # AIDEV-NOTE: injected into /config.js at start; forms POST here from the browser,
+      #            so it must be the LAN-reachable n8n URL (not an internal docker name).
+      - WEBHOOK_BASE_URL=http://${SERVER_IP}:5678
+    networks:
+      - n8n-local
+
+# ── Volumes ──────────────────────────────────────────────────────────
+volumes:
+  n8n-data:
+    driver: local
+  minio-data:
+  mailserver-opendkim-keys:
+
+# ── Networks ─────────────────────────────────────────────────────────
+# AIDEV-NOTE: n8n-local = this stack's private bridge (created by compose).
+# flow-apis = shared network for local API containers in OTHER compose stacks;
+# n8n joins it to call them by name. Create it once before `up`:
+#   docker network create flow-apis
+# and have each API stack join the same external network.
+networks:
+  n8n-local:
+    driver: bridge
+  flow-apis:
+    external: true
