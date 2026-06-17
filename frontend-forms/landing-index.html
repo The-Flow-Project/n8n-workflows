@@ -9,22 +9,26 @@
   <title>The Flow — Forms</title>
   <link rel="icon" href="/favicon.ico" />
   <style>
-    :root { --bg: ##f1f5f9; --card: #1b212b; --fg: #f4f6fa; --muted: #9aa6b6; --accent: #5b8def; }
+    /* AIDEV-NOTE: palette mirrors workflows-preprocessing/form/style.css so the landing
+       menu matches the form pages (light page bg, white cards, navy brand bar). */
+    :root { --brand-bg: #1a2e4a; --bg: #f1f5f9; --card: #ffffff; --fg: #1e293b;
+            --heading: #0f172a; --muted: #64748b; --border: #e2e8f0; --accent: #6366f1; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    body { margin: 0; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
            background: var(--bg); color: var(--fg); min-height: 100vh; }
-    header { display: flex; align-items: center; gap: 1rem; padding: 1.5rem 2rem; }
-    header img { height: 40px; }
-    main { max-width: 880px; margin: 0 auto; padding: 1rem 2rem 4rem; }
-    h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+    header { display: flex; align-items: center; gap: 1rem; padding: 1rem 2rem;
+             background: var(--brand-bg); height: 64px; }
+    header img { height: 32px; }
+    main { max-width: 880px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+    h1 { font-size: 1.6rem; margin: 0 0 .25rem; color: var(--heading); }
     p.lead { color: var(--muted); margin-top: 0; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 1rem; margin-top: 2rem; }
     a.card { display: block; text-decoration: none; color: inherit; background: var(--card);
-             border: 1px solid #2a313d; border-radius: 12px; padding: 1.25rem 1.5rem;
+             border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem;
              transition: border-color .15s, transform .15s; }
     a.card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    a.card h2 { margin: 0 0 .35rem; font-size: 1.15rem; }
+    a.card h2 { margin: 0 0 .35rem; font-size: 1.15rem; color: var(--heading); }
     a.card span { color: var(--muted); font-size: .9rem; }
     footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 2rem; }
     footer a { color: var(--muted); }

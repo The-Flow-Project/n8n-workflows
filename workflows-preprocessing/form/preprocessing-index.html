@@ -269,7 +269,7 @@
 
         <div class="button-group">
           <button type="submit" class="submit-btn" id="submit-btn">Start Preprocessing</button>
-          <button type="button" class="reset-btn" id="reset-btn" onclick="resetForm()" style="display:none">Reset</button>
+          <button type="button" class="reset-btn" id="reset-btn" onclick="resetForm()">Reset</button>
         </div>
 
         <div class="status-box" id="status-box"></div>
@@ -331,14 +331,15 @@
     box.style.display = 'block';
   }
 
+  // AIDEV-NOTE: reset-btn is always visible; resetForm() clears the whole form and
+  //            restores the submit button regardless of submission state.
   function resetForm() {
     const form = document.getElementById('preprocess-form');
     const btn = document.getElementById('submit-btn');
-    const resetBtn = document.getElementById('reset-btn');
     form.reset();
+    setZipMode('url');
     btn.disabled = false;
     btn.textContent = 'Start Preprocessing';
-    resetBtn.style.display = 'none';
     document.getElementById('status-box').style.display = 'none';
   }
 
@@ -409,7 +410,6 @@
         showStatus('success',
           `Job submitted successfully. You will receive an email at ${form.querySelector('[name="notify_email"]').value} when preprocessing is done.`);
         btn.textContent = 'Submitted';
-        document.getElementById('reset-btn').style.display = 'inline-block';
       } else {
         const text = await res.text();
         showStatus('error', `Error ${res.status}: ${text}`);
