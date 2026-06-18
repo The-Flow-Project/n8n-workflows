@@ -156,54 +156,11 @@
               <div class="expert-section-title">Segmentation</div>
               <div class="expert-section-fields">
 
-                <div class="row-2">
-                  <div class="field">
-                    <label for="segment">Segmenter <span class="tooltip-icon" data-tip="Segmentation engine for detecting text lines. Use 'none' to skip re-segmentation and rely on existing XML annotations.">?</span></label>
-                    <select id="segment" name="segment">
-                      <option value="yolo">yolo</option>
-                      <option value="kraken">kraken</option>
-                      <option value="" selected>none</option>
-                    </select>
-                  </div>
-                  <div class="field">
-                    <label for="batch_size">Batch size <span class="tooltip-icon" data-tip="Number of images processed per inference batch. Increase for faster processing if sufficient GPU memory is available.">?</span></label>
-                    <input type="number" id="batch_size" name="batch_size" value="16" min="1" max="128" />
-                  </div>
-                </div>
-
-                <div class="field">
-                  <label for="seg_model">Segmenter model names <span class="tooltip-icon" data-tip="HuggingFace model identifier used for segmentation. Separate multiple model names with commas.">?</span></label>
-                  <input type="text" id="seg_model" name="segmenter_model_names" value="Riksarkivet/yolov9-lines-within-regions-1" />
-                </div>
-
-                <div class="field">
-                  <label for="seg_batch">Segmenter batch sizes <span class="tooltip-icon" data-tip="Batch size used specifically during the segmentation step. Can differ from the global batch size above.">?</span></label>
-                  <input type="number" id="seg_batch" name="segmenter_batch_sizes" value="16" min="1" max="128" />
-                </div>
-
                 <div class="field">
                   <label class="checkbox-row">
-                    <input type="checkbox" name="load_existing_segmentation" checked />
-                    Load existing segmentation
-                    <span class="tooltip-icon" data-tip="If checked, line regions already annotated in the Page XML are reused without running the segmenter again.">?</span>
-                  </label>
-                </div>
-
-                <div class="checkboxes-grid">
-                  <label class="checkbox-row">
-                    <input type="checkbox" name="order_lines" />
-                    Order lines
-                    <span class="tooltip-icon" data-tip="If checked, text lines within each region are sorted into reading order before export.">?</span>
-                  </label>
-                  <label class="checkbox-row">
-                    <input type="checkbox" name="baselines" />
-                    Baselines
-                    <span class="tooltip-icon" data-tip="If checked, baseline coordinates from the Page XML are extracted and stored in the output.">?</span>
-                  </label>
-                  <label class="checkbox-row">
-                    <input type="checkbox" name="kraken_linemasks" />
-                    Kraken linemasks
-                    <span class="tooltip-icon" data-tip="If checked, Kraken-format polygon line masks are generated and stored alongside the line images.">?</span>
+                    <input type="checkbox" name="full_segmentation" />
+                    Linemask and baseline recognition (loading existing segmentation)
+                    <span class="tooltip-icon" data-tip="If checked, existing Page XML segmentation is loaded, lines are ordered into reading order, baselines are extracted, and Kraken line masks are generated.">?</span>
                   </label>
                 </div>
 
@@ -331,8 +288,6 @@
     box.style.display = 'block';
   }
 
-  // AIDEV-NOTE: reset-btn is always visible; resetForm() clears the whole form and
-  //            restores the submit button regardless of submission state.
   function resetForm() {
     const form = document.getElementById('preprocess-form');
     const btn = document.getElementById('submit-btn');
@@ -362,20 +317,23 @@
     fd.append('crop',                            gc('crop'));
     fd.append('allow_empty_lines',               gc('allow_empty_lines'));
     fd.append('append',                          gc('append'));
-    fd.append('batch_size',                      gv('batch_size'));
     fd.append('augmentation_loops',              gv('augmentation_loops'));
     fd.append('min_width_line',                  gv('min_width_line'));
     fd.append('min_height_line',                 gv('min_height_line'));
     fd.append('split_train_ratio',               gv('split_train_ratio'));
     fd.append('split_seed',                      gv('split_seed'));
     fd.append('split_shuffle',                   gc('split_shuffle'));
-    fd.append('segment',                         gv('segment'));
-    gv('segmenter_model_names').split(',').map(m => m.trim()).filter(m => m).forEach(model => fd.append('segmenter_model_names', model));
-    fd.append('segmenter_batch_sizes',           gv('segmenter_batch_sizes'));
-    fd.append('load_existing_segmentation',      gc('load_existing_segmentation'));
-    fd.append('order_lines',                     gc('order_lines'));
-    fd.append('baselines',                       gc('baselines'));
-    fd.append('kraken_linemasks',                gc('kraken_linemasks'));
+    // AIDEV-NOTE: segmentation simplified to one toggle (full_segmentation); engine + batch params are fixed.
+    //   segmenter_model_names is intentionally NOT appended so n8n sees it as null (FormData would
+    //   coerce a value to a string, and "null" is not the same as a real null).
+    fd.append('segment',                         'kraken');
+    fd.append('batch_size',                      '1');
+    fd.append('segmenter_batch_sizes',           '1');
+    const fullSeg = gc('full_segmentation');
+    fd.append('load_existing_segmentation',      fullSeg);
+    fd.append('order_lines',                     fullSeg);
+    fd.append('baselines',                       fullSeg);
+    fd.append('kraken_linemasks',                fullSeg);
     fd.append('creator',                         gv('creator'));
     fd.append('notify_email',                    gv('notify_email'));
 

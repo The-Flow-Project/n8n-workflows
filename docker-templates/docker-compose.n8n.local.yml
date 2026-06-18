@@ -29,8 +29,8 @@ services:
       - N8N_HOST=${SERVER_IP}
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
-      # AIDEV-NOTE: over plain HTTP n8n's secure-only cookie is dropped by the browser,
-      #            which logs you straight back out. Must be false for non-HTTPS access.
+      # over plain HTTP n8n's secure-only cookie is dropped by the browser,
+      # which logs you straight back out. Must be false for non-HTTPS access.
       - N8N_SECURE_COOKIE=false
       - WEBHOOK_URL=http://${SERVER_IP}:5678/
       - N8N_DEFAULT_CORS=TRUE
@@ -66,8 +66,6 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      # AIDEV-NOTE: n8n also joins the shared flow-apis network so workflows can call
-      #            local API containers (other compose stacks) by their container name.
       - n8n-local
       - flow-apis
 
@@ -81,7 +79,6 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      # AIDEV-NOTE: embed the LAN URL so presigned/public links point at the reachable host
       MINIO_SERVER_URL: http://${SERVER_IP}:9000
     command: server /data --console-address ":9001"
     volumes:
@@ -118,7 +115,7 @@ services:
       - n8n-local
 
   # ── Send-only SMTP relay (Postfix + OpenDKIM) ────────────────────────
-  # AIDEV-NOTE: send-only relay; internal use only (no published port). The sender
+  # send-only relay; internal use only (no published port). The sender
   # domain is still a real domain so outgoing mail has a valid From address.
   mailserver:
     image: boky/postfix:latest
@@ -143,8 +140,8 @@ services:
     ports:
       - "80:80"
     environment:
-      # AIDEV-NOTE: injected into /config.js at start; forms POST here from the browser,
-      #            so it must be the LAN-reachable n8n URL (not an internal docker name).
+      # injected into /config.js at start; forms POST here from the browser,
+      # so it must be the LAN-reachable n8n URL (not an internal docker name).
       - WEBHOOK_BASE_URL=http://${SERVER_IP}:5678
     networks:
       - n8n-local
@@ -152,12 +149,18 @@ services:
 # ── Volumes ──────────────────────────────────────────────────────────
 volumes:
   n8n-data:
-    driver: local
+    external: true
+    name: n8n_n8n-data
   minio-data:
+    external: true
+    name: n8n_minio-data
   mailserver-opendkim-keys:
+    external: true
+    name: n8n_mailserver-opendkim-keys
+
 
 # ── Networks ─────────────────────────────────────────────────────────
-# AIDEV-NOTE: n8n-local = this stack's private bridge (created by compose).
+# n8n-local = this stack's private bridge (created by compose).
 # flow-apis = shared network for local API containers in OTHER compose stacks;
 # n8n joins it to call them by name. Create it once before `up`:
 #   docker network create flow-apis
