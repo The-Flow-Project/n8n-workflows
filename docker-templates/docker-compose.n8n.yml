@@ -149,8 +149,8 @@ services:
       - traefik-public
 
   # ── Send-only SMTP relay (Postfix + OpenDKIM) ────────────────────────
-  # AIDEV-NOTE: send-only relay; no inbox/receiving. Get the DKIM public key with:
-  #   docker exec mailserver cat /etc/opendkim/keys/${DOMAIN_NAME}/mail.txt
+  # send-only relay; no inbox/receiving. Get the DKIM public key with:
+  #   docker exec mailserver cat /etc/opendkim/keys/${DOMAIN_NAME}/mailunibe.txt
   mailserver:
     image: boky/postfix:latest
     container_name: mailserver
@@ -159,6 +159,9 @@ services:
       - HOSTNAME=${SUBDOMAIN_MAIL}.${DOMAIN_NAME}
       - ALLOWED_SENDER_DOMAINS=${DOMAIN_NAME}
       - DKIM_AUTOGENERATE=1
+      # selector must match the published yourmail._domainkey TXT record;
+      # maybe default selector "mail" collides with another server's existing mail._domainkey on this domain
+      # - DKIM_SELECTOR=mail
       - POSTFIX_inet_protocols=ipv4
     volumes:
       - mailserver-opendkim-keys:/etc/opendkim/keys
