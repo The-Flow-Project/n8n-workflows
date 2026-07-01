@@ -105,7 +105,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      # AIDEV-NOTE: MINIO_SERVER_URL makes MinIO embed the public hostname in its own responses/redirects
+      # MINIO_SERVER_URL makes MinIO embed the public hostname in its own responses/redirects
       MINIO_SERVER_URL: https://${SUBDOMAIN_MINIO}.${DOMAIN_NAME}
     command: server /data --console-address ":9001"
     volumes:
@@ -159,6 +159,7 @@ services:
       - HOSTNAME=${SUBDOMAIN_MAIL}.${DOMAIN_NAME}
       - ALLOWED_SENDER_DOMAINS=${DOMAIN_NAME}
       - DKIM_AUTOGENERATE=1
+      - POSTFIX_inet_protocols=ipv4
     volumes:
       - mailserver-opendkim-keys:/etc/opendkim/keys
     networks:
