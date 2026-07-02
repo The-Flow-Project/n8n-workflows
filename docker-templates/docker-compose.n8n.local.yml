@@ -67,7 +67,8 @@ services:
       start_period: 30s
     networks:
       - n8n-local
-      - flow-apis
+      - inference-network
+      - preprocess-network
 
   minio:
     image: minio/minio:latest
@@ -127,7 +128,7 @@ services:
       - DKIM_AUTOGENERATE=1
       # selector must match the published yourmail._domainkey TXT record;
       # maybe default selector "mail" collides with another server's existing mail._domainkey on this domain
-      # - DKIM_SELECTOR=mail
+      - DKIM_SELECTOR=${DKIM_SELECTOR:-mail}
       - POSTFIX_inet_protocols=ipv4
     volumes:
       - mailserver-opendkim-keys:/etc/opendkim/keys
@@ -165,12 +166,16 @@ volumes:
 
 # ── Networks ─────────────────────────────────────────────────────────
 # n8n-local = this stack's private bridge (created by compose).
-# flow-apis = shared network for local API containers in OTHER compose stacks;
+# inference-network = shared network for local API containers in OTHER compose stacks;
+# preprocess-network = shared network for local API containers in OTHER compose stacks.
 # n8n joins it to call them by name. Create it once before `up`:
-#   docker network create flow-apis
+#   docker network create inference-network
+#   docker network create preprocess-network
 # and have each API stack join the same external network.
 networks:
   n8n-local:
     driver: bridge
-  flow-apis:
+  inference-network:
+    external: true
+  preprocess-network:
     external: true
