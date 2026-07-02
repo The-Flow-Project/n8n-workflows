@@ -5,8 +5,6 @@
 # subdomains, no Traefik, no TLS. Intended for a trusted internal network.
 #
 #   n8n            -> http://<SERVER_IP>:5678
-#   MinIO console  -> http://<SERVER_IP>:9001
-#   MinIO S3 API   -> http://<SERVER_IP>:9000
 #   forms (all)    -> http://<SERVER_IP>/         (landing menu + /workflows-*/ sub-paths)
 #
 # This file does NOT replace the domain-based stack — run whichever you need:
@@ -60,7 +58,7 @@ services:
       - n8n-data:/home/node/.n8n
       - ./local-files:/files
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,18 +72,17 @@ services:
     image: minio/minio:latest
     container_name: minio
     restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    # no ports published: reachable only from other containers on n8n-local
+    # (e.g. http://minio:9000 from n8n), not from outside the host.
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_SERVER_URL: http://${SERVER_IP}:9000
+      MINIO_SERVER_URL: http://minio:9000
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 20s
       retries: 3
