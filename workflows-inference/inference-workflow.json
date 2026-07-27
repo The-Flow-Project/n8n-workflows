@@ -108,16 +108,8 @@
               "value": "={{ $json.params.target_image_size ?? null }}"
             },
             {
-              "name": "stop_on_fail",
-              "value": "={{ $json.params.stop_on_fail === true || $json.params.stop_on_fail === 'true' }}"
-            },
-            {
               "name": "splits",
               "value": "={{ $json.params.splits ?? ['train'] }}"
-            },
-            {
-              "name": "push_to_hub",
-              "value": "={{ $json.params.push_to_hub !== false && $json.params.push_to_hub !== 'false' }}"
             },
             {
               "name": "upload_mode",

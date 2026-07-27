@@ -541,3 +541,109 @@ input[type="file"] {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
+
+/* ── Repository destination choices ─────────────────────────────────── */
+
+.field-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-label);
+}
+
+.destination-options {
+  display: grid;
+  gap: 0.9rem;
+}
+
+/* Reset the global label margin for selectable cards */
+label.destination-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  color: var(--color-text-label);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.destination-option:hover {
+  border-color: var(--color-accent);
+}
+
+.destination-option:has(input:checked) {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.destination-option input[type="radio"] {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  accent-color: var(--color-accent);
+}
+
+.destination-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  line-height: 1.4;
+}
+
+.destination-description {
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.field-help {
+  margin-top: 0.45rem;
+}
+
+/* Space between the main choice and conditional controls */
+#target-repo-section,
+#private-repo-section,
+#existing-operation-section,
+#source-destination-section {
+  margin-top: 1.5rem;
+}
+
+/* Update/replace choices */
+#existing-operation-section {
+  display: grid;
+  gap: 1rem;
+}
+
+#existing-operation-section .field-label {
+  margin-bottom: 0.25rem;
+}
+
+/* The parent grid controls spacing for compact choices */
+label.destination-option.compact {
+  margin: 0;
+}
+
+.destination-summary {
+  margin-bottom: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: var(--color-bg);
+  border-radius: 6px;
+}
+
+.warning-box {
+  padding: 0.9rem 1rem;
+  border: 1px solid #d6a03a;
+  border-radius: 6px;
+  background: #fff8e8;
+  line-height: 1.45;
+}
+
+[hidden] {
+    display: none !important;
+}

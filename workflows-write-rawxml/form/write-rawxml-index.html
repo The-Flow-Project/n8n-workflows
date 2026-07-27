@@ -72,48 +72,150 @@
                 </div>
 
                 <div class="field">
-                    <label for="output_repo_name">Output dataset repository <span
-                            class="hint">owner/repo-name</span><span class="tooltip-icon"
-                                                                     data-tip="Target HuggingFace dataset for the raw XML with inference results inserted.">?</span></label>
-                    <input type="text" id="output_repo_name" name="output_repo_name"
-                           placeholder="my-org/my-raw-xml-with-inference"/>
-                </div>
-
-                <div class="field">
                     <label for="hf_token">HuggingFace token <span class="tooltip-icon"
                                                                   data-tip="A HuggingFace access token with permissions for the output repository.">?</span></label>
                     <input type="password" id="hf_token" name="huggingface_token" placeholder="hf_…"/>
                 </div>
-
-                <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="private_repo" id="private_repo" checked/>
-                        Private output repository
-                        <span class="tooltip-icon"
-                              data-tip="If checked, the output dataset repository is created as private.">?</span>
-                    </label>
-                </div>
             </div>
 
             <div class="card">
-                <div class="card-title">Upload Options</div>
+
+                <div class="card-title">Save Merged Dataset</div>
 
                 <div class="field">
-                    <label for="upload_mode">Upload mode</label>
-                    <select id="upload_mode" name="upload_mode">
-                        <option value="new_repo" selected>new_repo</option>
-                        <option value="replace">replace</option>
-                        <option value="update">update</option>
-                    </select>
+                    <div class="field-label">
+                        Where should the merged dataset be saved?
+                    </div>
+
+                    <div class="destination-options">
+                        <label class="destination-option">
+                            <input
+                                type="radio"
+                                name="destination_type"
+                                value="new"
+                                checked
+                            />
+
+                            <span class="destination-option-text">
+                                <strong>Create a new repository</strong>
+                                <span class="destination-description">
+                                    Recommended. The repository name must not already exist.
+                                </span>
+                            </span>
+                        </label>
+
+                        <label class="destination-option">
+                            <input
+                                type="radio"
+                                name="destination_type"
+                                value="existing"
+                            />
+
+                            <span class="destination-option-text">
+                                <strong>Write to another existing repository</strong>
+                                <span class="destination-description">
+                                    Update or replace a repository that already exists.
+                                </span>
+                            </span>
+                        </label>
+
+                        <label class="destination-option">
+                            <input
+                                type="radio"
+                                name="destination_type"
+                                value="source"
+                            />
+
+                            <span class="destination-option-text">
+                                <strong>Write back to the Raw XML source repository</strong>
+                                <span class="destination-description">
+                                    Advanced. This modifies the original Raw XML dataset.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
 
-                <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="allow_source_repo_update"/>
-                        Allow source repo update
-                        <span class="tooltip-icon"
-                              data-tip="If checked, the service may update the source repository if supported.">?</span>
+                <div class="field" id="target-repo-section">
+                    <label for="output_repo_name">
+                        <span id="target-repo-label">New repository name</span>
+                        <span class="hint">owner/repo-name</span>
                     </label>
+
+                    <input
+                        type="text"
+                        id="output_repo_name"
+                        name="output_repo_name"
+                        placeholder="my-org/my-new-rawxml-output"
+                    />
+
+                    <div class="field-help" id="target-repo-help">
+                        Enter a repository name that does not already exist.
+                    </div>
+                </div>
+
+                <div class="field" id="private-repo-section">
+                    <label class="checkbox-row">
+                        <input
+                            type="checkbox"
+                            name="private_repo"
+                            id="private_repo"
+                            checked
+                        />
+                        Create as a private repository
+                        <span
+                            class="tooltip-icon"
+                            data-tip="Uncheck this to create the new repository as public."
+                        >?</span>
+                    </label>
+                </div>
+
+                <div class="field" id="existing-operation-section" hidden>
+                    <div class="field-label">
+                        How should the existing repository be handled?
+                    </div>
+
+                    <label class="destination-option compact">
+                        <input
+                            type="radio"
+                            name="existing_operation"
+                            value="update"
+                            checked
+                        />
+
+                        <span class="destination-option-text">
+                            <strong>Update the repository</strong>
+                            <span class="destination-description">
+                                Keep the existing dataset and add the merged RawXML result.
+                            </span>
+                        </span>
+                    </label>
+
+                    <label class="destination-option compact">
+                        <input
+                            type="radio"
+                            name="existing_operation"
+                            value="replace"
+                        />
+
+                        <span class="destination-option-text">
+                            <strong>Replace the repository dataset</strong>
+                            <span class="destination-description">
+                                Replace the existing dataset contents with the merged result.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
+                <div id="source-destination-section" hidden>
+                    <div class="destination-summary">
+                        <strong>Destination:</strong>
+                        <span id="source-destination-name">Raw XML source repository</span>
+                    </div>
+
+                    <div class="warning-box">
+                        This operation writes directly to the original Raw XML repository.
+                    </div>
                 </div>
             </div>
 
@@ -144,9 +246,12 @@
 <!-- AIDEV-NOTE: runtime config injected by the container (see frontend-common/render-config.sh) -->
 <script src="/config.js"></script>
 <script>
-    // AIDEV-NOTE: webhook base comes from /config.js (window.APP_CONFIG.webhookBase) so the same
-    //            HTML works for domain and local/IP deployments; falls back to the public domain.
-    const WEBHOOK_BASE = (window.APP_CONFIG && window.APP_CONFIG.webhookBase) || 'https://webhook.flow-project.net';
+    // AIDEV-NOTE: webhook base comes from /config.js
+    // so the same HTML works for domain and local/IP deployments.
+    const WEBHOOK_BASE =
+        (window.APP_CONFIG && window.APP_CONFIG.webhookBase) ||
+        'https://webhook.flow-project.net';
+
     const WEBHOOK_URL = `${WEBHOOK_BASE}/webhook/rawxml-merge-start`;
 
     function showStatus(type, message) {
@@ -156,26 +261,130 @@
         box.style.display = 'block';
     }
 
-    const gv = (form, name) => form.querySelector(`[name="${name}"]`)?.value?.trim() ?? '';
-    const gc = (form, name) => Boolean(form.querySelector(`[name="${name}"]`)?.checked);
+    const gv = (form, name) =>
+        form.querySelector(`[name="${name}"]`)?.value?.trim() ?? '';
+
+    const gc = (form, name) =>
+        Boolean(form.querySelector(`[name="${name}"]`)?.checked);
+
+    function getCheckedValue(form, name) {
+        return form.querySelector(`[name="${name}"]:checked`)?.value ?? '';
+    }
+
+    const rawXmlForm = document.getElementById('rawxml-merge-form');
+
+    const destinationInputs = rawXmlForm.querySelectorAll(
+        'input[name="destination_type"]'
+    );
+
+    const rawXmlRepoInput = document.getElementById('raw_xml_repo');
+    const outputRepoInput = document.getElementById('output_repo_name');
+
+    const targetRepoSection = document.getElementById('target-repo-section');
+    const targetRepoLabel = document.getElementById('target-repo-label');
+    const targetRepoHelp = document.getElementById('target-repo-help');
+
+    const privateRepoSection = document.getElementById('private-repo-section');
+
+    const existingOperationSection = document.getElementById(
+        'existing-operation-section'
+    );
+
+    const sourceDestinationSection = document.getElementById(
+        'source-destination-section'
+    );
+
+    const sourceDestinationName = document.getElementById(
+        'source-destination-name'
+    );
+
+    function updateDestinationUI() {
+        const destination = getCheckedValue(
+            rawXmlForm,
+            'destination_type'
+        );
+
+        const isNew = destination === 'new';
+        const isExisting = destination === 'existing';
+        const isSource = destination === 'source';
+
+        targetRepoSection.hidden = isSource;
+        outputRepoInput.required = !isSource;
+        outputRepoInput.disabled = isSource;
+
+        privateRepoSection.hidden = !isNew;
+        existingOperationSection.hidden = isNew;
+        sourceDestinationSection.hidden = !isSource;
+
+        if (isNew) {
+            targetRepoLabel.textContent = 'New repository name';
+            targetRepoHelp.textContent =
+                'Enter a repository name that does not already exist.';
+            outputRepoInput.placeholder =
+                'my-org/my-new-rawxml-output';
+        }
+
+        if (isExisting) {
+            targetRepoLabel.textContent = 'Existing target repository';
+            targetRepoHelp.textContent =
+                'Enter the name of a repository that already exists.';
+            outputRepoInput.placeholder =
+                'my-org/my-existing-rawxml-output';
+        }
+
+        sourceDestinationName.textContent =
+            rawXmlRepoInput.value.trim() || 'Raw XML source repository';
+    }
+
+    destinationInputs.forEach((input) => {
+        input.addEventListener('change', updateDestinationUI);
+    });
+
+    rawXmlRepoInput.addEventListener('input', updateDestinationUI);
+
+    updateDestinationUI();
 
     function buildBody(form) {
+        const rawXmlRepo = gv(form, 'raw_xml_repo');
+        const destination = getCheckedValue(form, 'destination_type');
+
+        let outputRepoName;
+        let uploadMode;
+        let allowSourceRepoUpdate;
+
+        if (destination === 'new') {
+            outputRepoName = gv(form, 'output_repo_name');
+            uploadMode = 'new_repo';
+            allowSourceRepoUpdate = false;
+        } else if (destination === 'existing') {
+            outputRepoName = gv(form, 'output_repo_name');
+            uploadMode =
+                getCheckedValue(form, 'existing_operation') || 'update';
+            allowSourceRepoUpdate = false;
+        } else {
+            outputRepoName = rawXmlRepo;
+            uploadMode =
+                getCheckedValue(form, 'existing_operation') || 'update';
+            allowSourceRepoUpdate = true;
+        }
+
         return {
-            raw_xml_repo: gv(form, 'raw_xml_repo'),
+            raw_xml_repo: rawXmlRepo,
             inference_repo: gv(form, 'inference_repo'),
             huggingface_token: gv(form, 'huggingface_token'),
-            output_repo_name: gv(form, 'output_repo_name'),
+            output_repo_name: outputRepoName,
             private_repo: gc(form, 'private_repo'),
-            upload_mode: gv(form, 'upload_mode') || 'new_repo',
-            allow_source_repo_update: gc(form, 'allow_source_repo_update'),
+            upload_mode: uploadMode,
+            allow_source_repo_update: allowSourceRepoUpdate,
             notify_email: gv(form, 'notify_email'),
         };
     }
 
-    document.getElementById('rawxml-merge-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const btn = document.getElementById('submit-btn');
+    rawXmlForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const form = event.target;
+        const submitButton = document.getElementById('submit-btn');
         const apiKey = document.getElementById('api_key').value.trim();
 
         if (!apiKey) {
@@ -183,38 +392,85 @@
             return;
         }
 
-        if (!gv(form, 'raw_xml_repo') || !gv(form, 'inference_repo') || !gv(form, 'output_repo_name') || !gv(form, 'huggingface_token')) {
-            showStatus('error', 'Please fill in raw XML repo, inference repo, output repo, and HuggingFace token.');
+        const body = buildBody(form);
+        const destination = getCheckedValue(form, 'destination_type');
+
+        if (
+            !body.raw_xml_repo ||
+            !body.inference_repo ||
+            !body.huggingface_token
+        ) {
+            showStatus(
+                'error',
+                'Please enter the Raw XML repository, inference repository, and Hugging Face token.'
+            );
             return;
         }
 
-        btn.disabled = true;
-        btn.textContent = 'Submitting…';
+        if (destination !== 'source' && !body.output_repo_name) {
+            showStatus(
+                'error',
+                destination === 'new'
+                    ? 'Please enter a name for the new repository.'
+                    : 'Please enter the existing target repository.'
+            );
+            return;
+        }
+
+        if (
+            destination !== 'source' &&
+            body.output_repo_name === body.raw_xml_repo
+        ) {
+            showStatus(
+                'error',
+                'The target repository matches the Raw XML source repository. ' +
+                'Select “Write back to the Raw XML source repository” instead.'
+            );
+            return;
+        }
+
+        if (body.upload_mode === 'replace') {
+            const confirmed = window.confirm(
+                `Replace the dataset contents in "${body.output_repo_name}"? ` +
+                'This is a destructive operation.'
+            );
+
+            if (!confirmed) {
+                return;
+            }
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting…';
         showStatus('info', 'Sending request to RawXML merge pipeline…');
 
         try {
-            const res = await fetch(WEBHOOK_URL, {
+            const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-API-KEY': apiKey,
                 },
-                body: JSON.stringify(buildBody(form)),
+                body: JSON.stringify(body),
             });
 
-            if (res.ok) {
-                showStatus('success', 'RawXML merge job submitted successfully. You will receive an email if notifications are enabled.');
-                btn.textContent = 'Submitted';
+            if (response.ok) {
+                showStatus(
+                    'success',
+                    'RawXML merge job submitted successfully. ' +
+                    'You will receive an email if notifications are enabled.'
+                );
+                submitButton.textContent = 'Submitted';
             } else {
-                const text = await res.text();
-                showStatus('error', `Error ${res.status}: ${text}`);
-                btn.disabled = false;
-                btn.textContent = 'Start RawXML Merge';
+                const text = await response.text();
+                showStatus('error', `Error ${response.status}: ${text}`);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Start RawXML Merge';
             }
-        } catch (err) {
-            showStatus('error', `Network error: ${err.message}`);
-            btn.disabled = false;
-            btn.textContent = 'Start RawXML Merge';
+        } catch (error) {
+            showStatus('error', `Network error: ${error.message}`);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Start RawXML Merge';
         }
     });
 </script>

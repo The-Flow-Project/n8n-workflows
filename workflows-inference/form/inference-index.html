@@ -37,8 +37,10 @@
         </nav>
         <div class="page-header">
             <h1>Flow TrOCR Inference</h1>
-            <p>Run TrOCR inference on a HuggingFace dataset and optionally push the output to a HuggingFace Hub
-                dataset.</p>
+            <p>
+                Run TrOCR inference on a HuggingFace dataset and choose where the
+                resulting dataset should be saved.
+            </p>
         </div>
 
         <form id="inference-form">
@@ -54,7 +56,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">HuggingFace Repositories</div>
+                <div class="card-title">Source Dataset</div>
                 <div class="field">
                     <label for="source_repo_name">Source dataset repository <span
                             class="hint">owner/repo-name</span><span class="tooltip-icon"
@@ -63,24 +65,9 @@
                            placeholder="my-org/my-source-dataset"/>
                 </div>
                 <div class="field">
-                    <label for="upload_repo_name">Output dataset repository <span
-                            class="hint">owner/repo-name</span><span class="tooltip-icon"
-                                                                     data-tip="Target HuggingFace dataset for inference output.">?</span></label>
-                    <input type="text" id="upload_repo_name" name="upload_repo_name"
-                           placeholder="my-org/target-dataset-for-inference-output"/>
-                </div>
-                <div class="field">
                     <label for="hf_token">HuggingFace token <span class="tooltip-icon"
                                                                   data-tip="A HuggingFace access token with permissions for the output repository.">?</span></label>
                     <input type="password" id="hf_token" name="huggingface_token" placeholder="hf_…"/>
-                </div>
-                <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="private_repo" id="private_repo" checked/>
-                        Private output repository
-                        <span class="tooltip-icon"
-                              data-tip="If checked, the output dataset repository is created as private.">?</span>
-                    </label>
                 </div>
             </div>
 
@@ -89,7 +76,7 @@
                 <div class="field">
                     <label for="trocr_model">TrOCR model <span class="tooltip-icon"
                                                                data-tip="HuggingFace model identifier used for inference.">?</span></label>
-                    <input type="text" id="trocr_model" name="trocr_model" value="microsoft/trocr-small-printed"/>
+                    <input type="text" id="trocr_model" name="trocr_model" value="microsoft/trocr-small-handwritten"/>
                 </div>
                 <div class="row-2">
                     <div class="field">
@@ -114,35 +101,141 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-title">Upload Options</div>
+             <div class="card">
+                <div class="card-title">Save Results</div>
+
                 <div class="field">
-                    <label for="upload_mode">Upload mode</label>
-                    <select id="upload_mode" name="upload_mode">
-                        <option value="new_repo" selected>new_repo</option>
-                        <option value="replace">replace</option>
-                        <option value="update">update</option>
-                    </select>
+                    <div class="field-label">Where should the inference results be saved?</div>
+
+                    <div class="destination-options">
+                        <label class="destination-option">
+                            <input
+                                type="radio"
+                                name="destination_type"
+                                value="new"
+                                checked
+                            />
+
+                            <span class="destination-option-text">
+                                <strong>Create a new repository</strong>
+                                <span class="destination-description">
+                                    Recommended. The repository name must not already exist.
+                                </span>
+                            </span>
+                        </label>
+
+                        <label class="destination-option">
+                            <input
+                                type="radio"
+                                name="destination_type"
+                                value="existing"
+                            />
+
+                            <span class="destination-option-text">
+                                <strong>Write to another existing repository</strong>
+                                <span class="destination-description">
+                                    Update or replace a repository that already exists.
+                                </span>
+                            </span>
+                        </label>
+
+                        <label class="destination-option">
+                            <input
+                                type="radio"
+                                name="destination_type"
+                                value="source"
+                            />
+
+                            <span class="destination-option-text">
+                                <strong>Write back to the source repository</strong>
+                                <span class="destination-description">
+                                    Advanced. This modifies the original input repository.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-                <div class="checkboxes-grid">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="push_to_hub" checked/>
-                        Push to Hub
-                        <span class="tooltip-icon"
-                              data-tip="If checked, inference output is pushed to HuggingFace Hub.">?</span>
+
+                <div class="field" id="target-repo-section">
+                    <label for="upload_repo_name">
+                        <span id="target-repo-label">New repository name</span>
+                        <span class="hint">owner/repo-name</span>
                     </label>
+
+                    <input
+                        type="text"
+                        id="upload_repo_name"
+                        name="upload_repo_name"
+                        placeholder="my-org/my-inference-output"
+                    />
+
+                    <div class="field-help" id="target-repo-help">
+                        Enter a repository name that does not already exist.
+                    </div>
+                </div>
+
+                <div class="field" id="private-repo-section">
                     <label class="checkbox-row">
-                        <input type="checkbox" name="allow_source_repo_update"/>
-                        Allow source repo update
-                        <span class="tooltip-icon"
-                              data-tip="If checked, the service may update the source repository if supported.">?</span>
+                        <input
+                            type="checkbox"
+                            name="private_repo"
+                            id="private_repo"
+                            checked
+                        />
+                        Create as a private repository
+                        <span
+                            class="tooltip-icon"
+                            data-tip="Uncheck this to create the repository as public."
+                        >?</span>
                     </label>
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="stop_on_fail"/>
-                        Stop on fail
-                        <span class="tooltip-icon"
-                              data-tip="If checked, the inference job stops after the first failure.">?</span>
+                </div>
+
+                <div class="field" id="existing-operation-section" hidden>
+                    <div class="field-label">
+                        How should the existing repository be handled?
+                    </div>
+
+                    <label class="destination-option compact">
+                        <input
+                            type="radio"
+                            name="existing_operation"
+                            value="update"
+                            checked
+                        />
+
+                        <span class="destination-option-text">
+                            <strong>Update the repository</strong>
+                            <span class="destination-description">
+                                Keep the existing dataset and add the inference results.
+                            </span>
+                        </span>
                     </label>
+
+                    <label class="destination-option compact">
+                        <input
+                            type="radio"
+                            name="existing_operation"
+                            value="replace"
+                        />
+
+                        <span class="destination-option-text">
+                            <strong>Replace the repository dataset</strong>
+                            <span class="destination-description">
+                                Replace the existing dataset contents with the inference result.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
+                <div id="source-destination-section" hidden>
+                    <div class="destination-summary">
+                        <strong>Destination:</strong>
+                        <span id="source-destination-name">Source repository</span>
+                    </div>
+
+                    <div class="warning-box">
+                        This operation writes directly to the original source repository.
+                    </div>
                 </div>
             </div>
 
@@ -188,32 +281,141 @@
     const gv = (form, name) => form.querySelector(`[name="${name}"]`)?.value?.trim() ?? '';
     const gc = (form, name) => Boolean(form.querySelector(`[name="${name}"]`)?.checked);
 
+    function getCheckedValue(form, name) {
+    return form.querySelector(`[name="${name}"]:checked`)?.value ?? '';
+    }
+
+    const inferenceForm = document.getElementById('inference-form');
+
+    const destinationInputs = inferenceForm.querySelectorAll(
+        'input[name="destination_type"]'
+    );
+
+    const sourceRepoInput = document.getElementById('source_repo_name');
+    const targetRepoInput = document.getElementById('upload_repo_name');
+
+    const targetRepoSection = document.getElementById('target-repo-section');
+    const targetRepoLabel = document.getElementById('target-repo-label');
+    const targetRepoHelp = document.getElementById('target-repo-help');
+
+    const privateRepoSection = document.getElementById(
+        'private-repo-section'
+    );
+
+    const existingOperationSection = document.getElementById(
+        'existing-operation-section'
+    );
+
+    const sourceDestinationSection = document.getElementById(
+        'source-destination-section'
+    );
+
+    const sourceDestinationName = document.getElementById(
+        'source-destination-name'
+    );
+
+    function updateDestinationUI() {
+        const destination = getCheckedValue(
+            inferenceForm,
+            'destination_type'
+        );
+
+        const isNew = destination === 'new';
+        const isExisting = destination === 'existing';
+        const isSource = destination === 'source';
+
+        targetRepoSection.hidden = isSource;
+        targetRepoInput.required = !isSource;
+        targetRepoInput.disabled = isSource;
+
+        privateRepoSection.hidden = !isNew;
+        existingOperationSection.hidden = isNew;
+        sourceDestinationSection.hidden = !isSource;
+
+        if (isNew) {
+            targetRepoLabel.textContent = 'New repository name';
+            targetRepoHelp.textContent =
+                'Enter a repository name that does not already exist.';
+            targetRepoInput.placeholder = 'my-org/my-new-inference-output';
+        }
+
+        if (isExisting) {
+            targetRepoLabel.textContent = 'Existing target repository';
+            targetRepoHelp.textContent =
+                'Enter the name of a repository that already exists.';
+            targetRepoInput.placeholder = 'my-org/my-existing-output';
+        }
+
+        sourceDestinationName.textContent =
+            sourceRepoInput.value.trim() || 'Source repository';
+    }
+
+    destinationInputs.forEach(input => {
+        input.addEventListener('change', updateDestinationUI);
+    });
+
+    sourceRepoInput.addEventListener('input', updateDestinationUI);
+
+    updateDestinationUI();
+
     function buildBody(form) {
         const targetImageWidth = gv(form, 'target_image_width');
         const targetImageHeight = gv(form, 'target_image_height');
+
         const targetImageSize = targetImageWidth && targetImageHeight
-            ? [parseInt(targetImageWidth, 10), parseInt(targetImageHeight, 10)]
+            ? [
+                parseInt(targetImageWidth, 10),
+                parseInt(targetImageHeight, 10)
+            ]
             : null;
 
+        const sourceRepo = gv(form, 'source_repo_name');
+        const destination = getCheckedValue(form, 'destination_type');
+
+        let uploadRepoName;
+        let uploadMode;
+        let allowSourceRepoUpdate;
+
+        if (destination === 'new') {
+            uploadRepoName = gv(form, 'upload_repo_name');
+            uploadMode = 'new_repo';
+            allowSourceRepoUpdate = false;
+        } else if (destination === 'existing') {
+            uploadRepoName = gv(form, 'upload_repo_name');
+            uploadMode =
+                getCheckedValue(form, 'existing_operation') || 'update';
+            allowSourceRepoUpdate = false;
+        } else {
+            uploadRepoName = sourceRepo;
+            uploadMode =
+                getCheckedValue(form, 'existing_operation') || 'update';
+            allowSourceRepoUpdate = true;
+        }
+
         return {
-            upload_repo_name: gv(form, 'upload_repo_name'),
+            source_repo_name: sourceRepo,
+            upload_repo_name: uploadRepoName,
+            upload_mode: uploadMode,
+            allow_source_repo_update: allowSourceRepoUpdate,
+
             private_repo: gc(form, 'private_repo'),
-            trocr_model: gv(form, 'trocr_model') || 'microsoft/trocr-small-printed',
+            trocr_model:
+                gv(form, 'trocr_model') ||
+                'microsoft/trocr-small-printed',
             target_image_size: targetImageSize,
-            stop_on_fail: gc(form, 'stop_on_fail'),
-            splits: gv(form, 'splits').split(',').map(s => s.trim()).filter(Boolean),
-            push_to_hub: gc(form, 'push_to_hub'),
-            upload_mode: gv(form, 'upload_mode') || 'new_repo',
-            allow_source_repo_update: gc(form, 'allow_source_repo_update'),
+            splits: gv(form, 'splits')
+                .split(',')
+                .map(split => split.trim())
+                .filter(Boolean),
             huggingface_token: gv(form, 'huggingface_token'),
-            source_repo_name: gv(form, 'source_repo_name'),
             notify_email: gv(form, 'notify_email'),
         };
     }
 
-    document.getElementById('inference-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
+    inferenceForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const form = event.target;
         const btn = document.getElementById('submit-btn');
         const apiKey = document.getElementById('api_key').value.trim();
 
@@ -222,9 +424,48 @@
             return;
         }
 
-        if (!gv(form, 'source_repo_name') || !gv(form, 'upload_repo_name') || !gv(form, 'huggingface_token')) {
-            showStatus('error', 'Please fill in source repo, output repo, and HuggingFace token.');
+        const body = buildBody(form);
+        const destination = getCheckedValue(form, 'destination_type');
+
+        if (!body.source_repo_name || !body.huggingface_token) {
+            showStatus(
+                'error',
+                'Please enter the source repository and Hugging Face token.'
+            );
             return;
+        }
+
+        if (destination !== 'source' && !body.upload_repo_name) {
+            showStatus(
+                'error',
+                destination === 'new'
+                    ? 'Please enter a name for the new repository.'
+                    : 'Please enter the existing target repository.'
+            );
+            return;
+        }
+
+        if (
+            destination !== 'source' &&
+            body.upload_repo_name === body.source_repo_name
+        ) {
+            showStatus(
+                'error',
+                'The target repository matches the source repository. ' +
+                'Select “Write back to the source repository” instead.'
+            );
+            return;
+        }
+
+        if (body.upload_mode === 'replace') {
+            const confirmed = window.confirm(
+                `Replace the dataset contents in "${body.upload_repo_name}"? ` +
+                'This is a destructive operation.'
+            );
+
+            if (!confirmed) {
+                return;
+            }
         }
 
         btn.disabled = true;
@@ -238,20 +479,24 @@
                     'Content-Type': 'application/json',
                     'X-API-KEY': apiKey,
                 },
-                body: JSON.stringify(buildBody(form)),
+                body: JSON.stringify(body),
             });
 
             if (res.ok) {
-                showStatus('success', 'Inference job submitted successfully. You will receive an email if notifications are enabled.');
+                showStatus(
+                    'success',
+                    'Inference job submitted successfully. ' +
+                    'You will receive an email if notifications are enabled.'
+                );
                 btn.textContent = 'Submitted';
             } else {
-                const text = await res.text();
-                showStatus('error', `Error ${res.status}: ${text}`);
+                const responseText = await res.text();
+                showStatus('error', `Error ${res.status}: ${responseText}`);
                 btn.disabled = false;
                 btn.textContent = 'Start Inference';
             }
-        } catch (err) {
-            showStatus('error', `Network error: ${err.message}`);
+        } catch (error) {
+            showStatus('error', `Network error: ${error.message}`);
             btn.disabled = false;
             btn.textContent = 'Start Inference';
         }
