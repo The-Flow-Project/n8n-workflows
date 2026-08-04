@@ -1,7 +1,8 @@
 # n8n environment — deployment variants
 
-Two ways to run the same stack (n8n + Garage S3-compatible storage + send-only mailserver +
-the workflow forms). Pick one; they don't replace each other.
+Two ways to run the same stack (n8n + Garage S3-compatible storage + the workflow forms).
+Pick one; they don't replace each other. The self-hosted mailserver is a separate, optional
+add-on on top of either — see "Outbound mail" below.
 
 |               | Domain variant                              | Local / no-domain variant       |
 | ------------- | ------------------------------------------- | ------------------------------- |
@@ -24,6 +25,7 @@ docker network create traefik-public
 docker network create preprocess-network   # shared network, see "Docker networks" below
 docker compose -f docker-compose.traefik-proxy.yml up -d
 docker compose -f docker-compose.n8n.yml up -d
+# add -f docker-compose.mailserver.yml for self-hosted outbound mail — see "Outbound mail" below
 ```
 
 ## Local / no-domain variant
@@ -36,6 +38,7 @@ docker network create inference-network    # shared networks for local API conta
 docker network create preprocess-network
 cp .env.local.example .env                 # set SERVER_IP and secrets
 docker compose -f docker-compose.n8n.local.yml up -d
+# add -f docker-compose.mailserver.local.yml for self-hosted outbound mail — see "Outbound mail" below
 ```
 
 ### Calling local APIs from workflows
@@ -72,6 +75,28 @@ setup (`http://<ip>:<port>`); for an API on the **host itself**, add
 Users only need to remember the IP — the landing page links to every form. Garage (the S3
 storage, see below) publishes no ports to the host, so it has no `<SERVER_IP>` URL — it's
 only reachable from other containers.
+
+## Outbound mail
+
+Self-hosted mail (Postfix + OpenDKIM) is optional and lives in its own compose file, not
+either base stack — it only covers n8n's own instance emails (user invites, password
+resets). Workflow-level email uses a node credential instead (Mailjet, Gmail — see
+`../README.md`), independent of any of this.
+
+- **Self-hosted, own domain** — apply `docker-compose.mailserver.yml` /
+  `docker-compose.mailserver.local.yml` on top of the matching base stack:
+
+  ```bash
+  docker compose -f docker-compose.n8n.local.yml -f docker-compose.mailserver.local.yml up -d
+  ```
+
+  Needs DNS access to `${DOMAIN_NAME}` to publish the DKIM TXT record — see that file's
+  header comment. It delivers direct-to-MX over outbound port 25, which most managed or
+  secured networks block, so this only works reliably on an open network.
+
+- **No self-hosting at all** — skip both mailserver compose files entirely and use Mailjet
+  or Gmail as the workflow's email credential instead — see `../README.md`. The right choice
+  on a managed/secured network, since neither depends on outbound port 25.
 
 ## Storage (Garage)
 

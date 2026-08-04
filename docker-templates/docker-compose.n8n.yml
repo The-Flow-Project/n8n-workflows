@@ -10,7 +10,6 @@
 #   SUBDOMAIN_WEBHOOK                 - subdomain, where the n8n webhooks are reachable
 #   SUBDOMAIN_PREPROCESSING_FORM      - subdomain, where the preprocessing form is served (e.g. form)
 #   SUBDOMAIN_INFERENCE_FORM          - subdomain, where the inference forms are served (e.g. inference)
-#   SUBDOMAIN_MAIL                    - subdomain for the mail server hostname (e.g. mail)
 #   ENCRYPTION_KEY                    - key to encrypt the n8n content (use `openssl rand -hex 32`)
 #   GENERIC_TIMEZONE                  - define timezone of the n8n environment (e.g. Europe/Berlin)
 #   GARAGE_RPC_SECRET                 - secret for Garage's internal RPC protocol (use `openssl rand -hex 32`)
@@ -19,9 +18,11 @@
 #   GARAGE_ACCESS_KEY                 - S3 access key ID other services use to talk to Garage
 #   GARAGE_SECRET_KEY                 - S3 secret access key other services use to talk to Garage (use `openssl rand -hex 32`)
 #   BUCKET_NAME                       - name of the created bucket (will be created if missing)
-#   SMTP_SENDER                       - local part of the sender address (e.g. noreply → noreply@example.com)
 #   FRONTEND_PREPROCESSING_DOCKERFILE - build context for the preprocessing form
 #   FRONTEND_INFERENCE_DOCKERFILE     - build context for the inference forms
+#
+# Self-hosted outbound mail is optional, not part of this file — see
+# docker-compose.mailserver.yml (and ../README.md for non-self-hosted alternatives).
 #
 # Garage has no public Traefik route — it's reachable two ways, both internal-only:
 #
@@ -67,13 +68,6 @@ services:
       # --- Timezone ---
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${GENERIC_TIMEZONE}
-
-      # --- SMTP (outbound mail via internal mailserver) ---
-      - N8N_EMAIL_MODE=smtp
-      - N8N_SMTP_HOST=mailserver
-      - N8N_SMTP_PORT=587
-      - N8N_SMTP_SSL=false
-      - N8N_SMTP_SENDER=${SMTP_SENDER}@${DOMAIN_NAME}
     volumes:
       - n8n-data:/home/node/.n8n
       - ./local-files:/files
@@ -169,26 +163,6 @@ services:
       - garage
     restart: on-failure
 
-  # ── Send-only SMTP relay (Postfix + OpenDKIM) ────────────────────────
-  # send-only relay; no inbox/receiving. Get the DKIM public key with:
-  #   docker exec mailserver cat /etc/opendkim/keys/${DOMAIN_NAME}/mailunibe.txt
-  mailserver:
-    image: boky/postfix:latest
-    container_name: mailserver
-    restart: unless-stopped
-    environment:
-      - HOSTNAME=${SUBDOMAIN_MAIL}.${DOMAIN_NAME}
-      - ALLOWED_SENDER_DOMAINS=${DOMAIN_NAME}
-      - DKIM_AUTOGENERATE=1
-      # selector must match the published yourmail._domainkey TXT record;
-      # maybe default selector "mail" collides with another server's existing mail._domainkey on this domain
-      # - DKIM_SELECTOR=mail
-      - POSTFIX_inet_protocols=ipv4
-    volumes:
-      - mailserver-opendkim-keys:/etc/opendkim/keys
-    networks:
-      - traefik-public
-
   # ── Preprocessing form (static HTML, belongs to n8n stack) ───────────
   preprocessing-form:
     build:
@@ -227,7 +201,6 @@ volumes:
   n8n-data:
     driver: local
   garage-data:
-  mailserver-opendkim-keys:
 
 # ── Networks ─────────────────────────────────────────────────────────
 networks:

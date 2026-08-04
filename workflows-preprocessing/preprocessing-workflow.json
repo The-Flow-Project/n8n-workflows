@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        15984,
-        4464
+        13552,
+        2544
       ],
-      "id": "3c2315ea-f3e9-49d5-83c1-6d4c958a2b04",
+      "id": "e326db67-6077-42bb-a80a-aaf93f6af993",
       "name": "Sticky Note"
     },
     {
@@ -29,10 +29,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        16320,
-        4976
+        13888,
+        3824
       ],
-      "id": "83dc9dd9-3067-47a3-b985-9cfa52d3895a",
+      "id": "eff864ee-446b-4ef3-9755-2fa935db9e41",
       "name": "Webhook: Receive Form",
       "webhookId": "a7100e1a-5596-44af-845b-916049d7497f",
       "credentials": {
@@ -53,10 +53,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        16544,
-        4880
+        14112,
+        3728
       ],
-      "id": "4ea355fd-cdec-4b52-a58c-bc651a615f92",
+      "id": "05d868e8-9789-4d7b-836e-83c7c3b51c88",
       "name": "Respond: 202 Accepted"
     },
     {
@@ -86,10 +86,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        16544,
-        5072
+        14112,
+        3920
       ],
-      "id": "5e3e89ba-5484-48c1-a3ab-bfc84f923ca1",
+      "id": "c076ac7b-ae24-4035-adf4-286cd11fc7c0",
       "name": "Has uploaded ZIP?"
     },
     {
@@ -109,18 +109,45 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        16768,
-        4992
+        14336,
+        3744
       ],
-      "id": "c040e3f8-4c58-48e3-8ccf-3a0d5b84b5fe",
+      "id": "61d223b1-9a92-4783-b406-3876ee5be284",
       "name": "Compute Upload Key"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "uploads",
+        "fileName": "={{ $json.upload_key }}",
+        "binaryPropertyName": "={{ $('Webhook: Receive Form').item.binary.zipfile }}",
+        "additionalFields": {},
+        "tagsUi": {
+          "tagsValues": []
+        }
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        14560,
+        3744
+      ],
+      "id": "d7ed66f4-e968-42ea-bcd2-bf21b47d3426",
+      "name": "Upload ZIP to garage",
+      "credentials": {
+        "s3": {
+          "id": "8JAgVdOvCMvRgyH6",
+          "name": "S3 account"
+        }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "assign-zip-url-from-minio",
+              "id": "assign-zip-url-from-garage",
               "name": "resolved_zip_url",
               "value": "={{ 'http://uploads.web.garage.internal:3902/' + $('Compute Upload Key').item.json.upload_key }}",
               "type": "string"
@@ -138,10 +165,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        17216,
-        4928
+        14784,
+        3552
       ],
-      "id": "3ce27cd7-abec-4ec6-8440-2e1fcef081cc",
+      "id": "e0835904-794f-4cf1-929e-c15ecd450a8b",
       "name": "Set URL from Upload"
     },
     {
@@ -167,10 +194,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        17216,
-        5376
+        14784,
+        4032
       ],
-      "id": "4eca1c20-ca10-4bb3-9889-85d610a3394c",
+      "id": "da240bd0-95bd-4bdb-9e87-333ff2b9de4f",
       "name": "Set URL from Form Field"
     },
     {
@@ -259,10 +286,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        17440,
-        4928
+        15008,
+        3552
       ],
-      "id": "55e70a14-7164-4ebc-b7a6-02c95b4cd131",
+      "id": "e5fff2e4-074e-4706-b745-b3f2b271c51b",
       "name": "POST: Start Preprocessing",
       "credentials": {
         "httpHeaderAuth": {
@@ -301,10 +328,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        17648,
-        4704
+        15232,
+        3120
       ],
-      "id": "1c332324-4736-45db-9ac9-e093685d587e",
+      "id": "14a53cca-db6e-408c-8970-7f3876b90bd3",
       "name": "Extract Job ID & Email"
     },
     {
@@ -314,10 +341,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        17888,
-        4848
+        15456,
+        3120
       ],
-      "id": "0b25d047-5899-47d1-b457-7ccc611801b9",
+      "id": "a95b93c1-7f4e-4c73-b2d9-f7d98576a0ad",
       "name": "Wait 30s",
       "webhookId": "e8dd615c-cd36-4596-9ce2-b461ac038eff"
     },
@@ -333,10 +360,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        18112,
-        4784
+        15680,
+        3056
       ],
-      "id": "df587e7e-ca03-4eb0-aafa-2335e9799bf1",
+      "id": "d7510e57-026e-46cd-836a-b3ff8b018b31",
       "name": "GET: Check Status",
       "credentials": {
         "httpHeaderAuth": {
@@ -411,10 +438,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        18336,
-        4704
+        15904,
+        2976
       ],
-      "id": "700a8afe-09ce-4ca0-80a8-85dedbc19bdc",
+      "id": "a2f11191-3334-47da-b20f-2eeaf8820411",
       "name": "Merge Status Context"
     },
     {
@@ -453,10 +480,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        18560,
-        4704
+        16128,
+        2976
       ],
-      "id": "5eac0b0a-1767-49f1-b5cf-03dacec0623a",
+      "id": "4917ca30-854b-43e6-a637-c7f1e9e7ccce",
       "name": "Job finished?"
     },
     {
@@ -486,10 +513,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        18784,
-        4704
+        16352,
+        2976
       ],
-      "id": "875a85e4-18cd-433c-b0dd-b75f36cd991b",
+      "id": "0391dbc7-f4fd-4304-a5bd-488054c8e1ab",
       "name": "Success or Failure?"
     },
     {
@@ -507,10 +534,10 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        19008,
-        4656
+        16576,
+        2928
       ],
-      "id": "c47396c8-0fc7-4aa8-89c4-bafe4b05153f",
+      "id": "9155bf32-d50f-4c7d-8984-3ca7cf49dd44",
       "name": "Email: Success",
       "webhookId": "8f78f2b1-6bd8-4777-9a95-a36df4bba053",
       "credentials": {
@@ -518,7 +545,8 @@
           "id": "4OJjUu2L3CuBhyy3",
           "name": "SMTP account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -535,10 +563,10 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        18816,
-        5200
+        16576,
+        3728
       ],
-      "id": "88c0a3ac-26fc-4f4c-a15d-0672d86d6793",
+      "id": "900cf11f-5847-406e-949f-7eedf7300e0a",
       "name": "Email: Failure",
       "webhookId": "a69369fa-0663-4777-8b82-c493705ef87b",
       "credentials": {
@@ -546,34 +574,59 @@
           "id": "4OJjUu2L3CuBhyy3",
           "name": "SMTP account"
         }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Preprocessing complete: {{ $json.repo_name }}",
+        "text": "=Preprocessing finished successfully\n\nYour PageXML/image export has been preprocessed and uploaded to HuggingFace.\n\nRepository: {{ $json.repo_name }}\nJob ID: {{ $json.process_id }}\nPages: {{ $json.total_pages }}\nRegions: {{ $json.total_regions }}\nLines: {{ $json.total_lines }}\nRuntime: {{ $json.runtime }}s\n\nYou can access the dataset at https://huggingface.co/datasets/{{ $json.repo_name }}\n\n---- Sent by the Flow preprocessing pipeline.",
+        "html": "=<h2>Preprocessing finished successfully</h2> <p> Your PageXML/image export has been preprocessed and uploaded to HuggingFace. </p>  <ul>   <li><strong>Repository:</strong> {{ $json.repo_name }}</li>   <li><strong>Job ID:</strong> {{ $json.process_id }}</li>   <li><strong>Pages:</strong> {{ $json.total_pages }}</li>   <li><strong>Regions:</strong> {{ $json.total_regions }}</li>   <li><strong>Lines:</strong> {{ $json.total_lines }}</li>   <li><strong>Runtime:</strong> {{ $json.runtime }}s</li> </ul> <p> You can access the dataset at <a href=\"https://huggingface.co/datasets/{{ $json.repo_name }}\">https://huggingface.co/datasets/{{ $json.repo_name }}</a>. </p> ---- <p> <small>Sent by the Flow preprocessing pipeline.</small> </p>",
+        "additionalFields": {},
+        "variablesUi": {
+          "variablesValues": []
+        }
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        16576,
+        2736
+      ],
+      "id": "057500f5-6ba8-412a-b08d-ac619545ee76",
+      "name": "Success: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
+        }
       }
     },
     {
       "parameters": {
-        "operation": "upload",
-        "bucketName": "uploads",
-        "fileName": "={{ $json.upload_key }}",
-        "binaryPropertyName": "={{ $('Webhook: Receive Form').item.binary.zipfile }}",
-        "additionalFields": {},
-        "tagsUi": {
-          "tagsValues": []
-        }
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Preprocessing FAILED: {{ $json.repo_name }}",
+        "text": "=Preprocessing failed\n\nUnfortunately your preprocessing job encountered an error.\n\nRepository: {{ $json.repo_name }}\nJob ID: {{ $json.process_id }}\nError: {{ $json.error_message }}\n\nPlease check the preprocessing service logs or contact the administrator.\n---- Sent by the Flow preprocessing pipeline.",
+        "html": "=<h2>Preprocessing failed</h2><p>Unfortunately your preprocessing job encountered an error.</p><ul><li><strong>Repository:</strong> {{ $json.repo_name }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Status:</strong> {{ $json.status }}</li><li><strong>Error:</strong> {{ $json.error_message }}</li></ul><p>Please check the preprocessing service logs or contact the administrator.</p><hr><p><small>Sent by the Flow preprocessing pipeline.</small></p>",
+        "additionalFields": {}
       },
-      "type": "n8n-nodes-base.s3",
+      "type": "n8n-nodes-base.mailjet",
       "typeVersion": 1,
       "position": [
-        16992,
-        4992
+        16576,
+        3536
       ],
-      "id": "d31bb023-6ec3-478e-8461-9036044e4f73",
-      "name": "Upload ZIP to Garage",
+      "id": "44d7632c-0e04-49e9-9f71-065ce077620f",
+      "name": "Failure: Email Mailjet Notification",
       "credentials": {
-        "s3": {
-          "id": "8JAgVdOvCMvRgyH6",
-          "name": "S3 account"
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
         }
-      },
-      "onError": "continueErrorOutput"
+      }
     }
   ],
   "pinData": {},
@@ -606,17 +659,6 @@
         [
           {
             "node": "Set URL from Form Field",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compute Upload Key": {
-      "main": [
-        [
-          {
-            "node": "Upload ZIP to Garage",
             "type": "main",
             "index": 0
           }
@@ -657,6 +699,11 @@
         [
           {
             "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
             "type": "main",
             "index": 0
           }
@@ -739,6 +786,11 @@
             "node": "Email: Success",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Success: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -746,11 +798,27 @@
             "node": "Email: Failure",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     },
-    "Upload ZIP to Garage": {
+    "Compute Upload Key": {
+      "main": [
+        [
+          {
+            "node": "Upload ZIP to garage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload ZIP to garage": {
       "main": [
         [
           {
@@ -760,6 +828,11 @@
           }
         ],
         [
+          {
+            "node": "Failure: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "Email: Failure",
             "type": "main",
@@ -774,7 +847,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "e2608af4-be04-4963-be48-f055dcc16e25",
+  "versionId": "c7da1c76-7d33-44ad-8cd8-ac4278e9d0f7",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "69c5ac709efddeb1926841a8dba71f057d4345bc500219252c23d3b33a2732e3"

@@ -85,7 +85,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://inference-service.flow-project.net/evaluation/hf/start",
+        "url": "http://service-trocr-inference:8000/evaluation/hf/start",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -181,7 +181,7 @@
     },
     {
       "parameters": {
-        "url": "=https://inference-service.flow-project.net/evaluation/status/{{ $json.process_id }}",
+        "url": "=http://service-trocr-inference:8000/evaluation/status/{{ $json.process_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -390,7 +390,8 @@
           "id": "SU1oQTKpVo8gu007",
           "name": "SMTP account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -417,6 +418,58 @@
         "smtp": {
           "id": "SU1oQTKpVo8gu007",
           "name": "SMTP account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Evaluation complete: {{ $json.repo_name }}",
+        "text": "=Evaluation finished successfully\n\nDataset: {{ $json.repo_name }}\nSplits: {{ JSON.stringify($json.splits) }}\nJob ID: {{ $json.process_id }}\nItems evaluated: {{ $json.total_items }}\nRuntime: {{ $json.runtime }}s\n\nResult URL: {{ $json.result_url }}\n\nMetrics:\n{{ JSON.stringify($json.metrics, null, 2) }}\n\n----\nSent by the Flow evaluation pipeline.",
+        "html": "=<h2>Evaluation finished successfully</h2><ul><li><strong>Dataset:</strong> {{ $json.repo_name }}</li><li><strong>Splits:</strong> {{ JSON.stringify($json.splits) }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Items evaluated:</strong> {{ $json.total_items }}</li><li><strong>Runtime:</strong> {{ $json.runtime }}s</li></ul><p>Result URL: <a href=\"{{ $json.result_url }}\">{{ $json.result_url }}</a></p><h3>Metrics</h3><pre>{{ JSON.stringify($json.metrics, null, 2) }}</pre><hr><p><small>Sent by the Flow evaluation pipeline.</small></p>",
+        "additionalFields": {},
+        "variablesUi": {
+          "variablesValues": []
+        }
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        154
+      ],
+      "id": "9b7b2e89-8669-46b5-b79e-932db3ea4c44",
+      "name": "Success: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Evaluation FAILED: {{ $json.repo_name }}",
+        "text": "=Evaluation failed\n\nDataset: {{ $json.repo_name }}\nSplits: {{ JSON.stringify($json.splits) }}\nJob ID: {{ $json.process_id }}\nStatus: {{ $json.status }}\nError: {{ $json.error_message }}\n\nPlease check the evaluation service logs.\n\n----\nSent by the Flow evaluation pipeline.",
+        "html": "=<h2>Evaluation failed</h2><ul><li><strong>Dataset:</strong> {{ $json.repo_name }}</li><li><strong>Splits:</strong> {{ JSON.stringify($json.splits) }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Status:</strong> {{ $json.status }}</li><li><strong>Error:</strong> {{ $json.error_message }}</li></ul><p>Please check the evaluation service logs.</p><hr><p><small>Sent by the Flow evaluation pipeline.</small></p>",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        646
+      ],
+      "id": "a95aa259-29ff-46c3-af8d-fb975eeea570",
+      "name": "Failure: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
         }
       }
     }
@@ -530,11 +583,21 @@
             "node": "Email: Success",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Success: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
           }
         ],
         [
           {
             "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
             "type": "main",
             "index": 0
           }
