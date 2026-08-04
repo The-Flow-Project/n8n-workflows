@@ -1,7 +1,7 @@
 # n8n environment — deployment variants
 
-Two ways to run the same stack (n8n + MinIO + send-only mailserver + the workflow forms).
-Pick one; they don't replace each other.
+Two ways to run the same stack (n8n + Garage S3-compatible storage + send-only mailserver +
+the workflow forms). Pick one; they don't replace each other.
 
 |               | Domain variant                              | Local / no-domain variant       |
 | ------------- | ------------------------------------------- | ------------------------------- |
@@ -21,6 +21,7 @@ ACME challenge (so certs issue without inbound ports) and point a public wildcar
 
 ```bash
 docker network create traefik-public
+docker network create preprocess-network   # shared network, see "Docker networks" below
 docker compose -f docker-compose.traefik-proxy.yml up -d
 docker compose -f docker-compose.n8n.yml up -d
 ```
@@ -31,24 +32,26 @@ No domain, no Traefik, no TLS — reach everything by the server's LAN IP over H
 Intended for a trusted internal network.
 
 ```bash
-docker network create flow-apis            # shared network for local API containers (see below)
+docker network create inference-network    # shared networks for local API containers (see below)
+docker network create preprocess-network
 cp .env.local.example .env                 # set SERVER_IP and secrets
 docker compose -f docker-compose.n8n.local.yml up -d
 ```
 
 ### Calling local APIs from workflows
 
-n8n joins a shared external network `flow-apis` in addition to the stack's private
-`n8n-local`. To let a workflow call an API that runs in **another compose stack** on the
-same host, have that stack join the same network and reach it by container name:
+n8n joins two shared external networks, `inference-network` and `preprocess-network`, in
+addition to the stack's private `n8n-local`. To let a workflow call an API that runs in
+**another compose stack** on the same host, have that stack join whichever of the two fits
+and reach it by container name:
 
 ```yaml
 # in the API's compose file
 services:
   my-api:
-    networks: [flow-apis]
+    networks: [preprocess-network]   # or inference-network
 networks:
-  flow-apis:
+  preprocess-network:
     external: true
 ```
 
@@ -60,15 +63,43 @@ setup (`http://<ip>:<port>`); for an API on the **host itself**, add
 | Service         | URL                                            |
 | --------------- | ---------------------------------------------- |
 | n8n             | `http://<SERVER_IP>:5678`                      |
-| MinIO console   | `http://<SERVER_IP>:9001`                      |
-| MinIO S3 API    | `http://<SERVER_IP>:9000`                      |
 | Forms (landing) | `http://<SERVER_IP>/`                          |
 | └ preprocessing | `http://<SERVER_IP>/workflows-preprocessing/`  |
 | └ inference     | `http://<SERVER_IP>/workflows-inference/`      |
 | └ write raw XML | `http://<SERVER_IP>/workflows-write-rawxml/`   |
 | └ evaluation    | `http://<SERVER_IP>/workflows-evaluation/`     |
 
-Users only need to remember the IP — the landing page links to every form.
+Users only need to remember the IP — the landing page links to every form. Garage (the S3
+storage, see below) publishes no ports to the host, so it has no `<SERVER_IP>` URL — it's
+only reachable from other containers.
+
+## Storage (Garage)
+
+Garage replaced MinIO as the S3-compatible store; both compose files run it as a single
+`garage` container in single-node mode, backed by one `garage-data` volume. On first boot it
+creates `BUCKET_NAME` and an access key with read/write on it automatically (no manual setup).
+It's reachable two ways, both internal-only — no public route, no host-published ports:
+
+1. **S3 API, SigV4-authenticated** — for n8n's S3 nodes and anything else that can hold
+   credentials: `http://garage:3900/<bucket>/<key>`, region `garage`, force-path-style,
+   using the `GARAGE_ACCESS_KEY`/`GARAGE_SECRET_KEY` from `.env`.
+2. **Anonymous GET** — for services that only take a plain URL and can't do S3 auth (e.g. a
+   preprocessing API fetching an uploaded file server-side). Garage's anonymous access is
+   Host-header-routed rather than path-style, so `garage` carries a network alias on
+   `preprocess-network` matching its bucket: `http://<bucket>.web.garage.internal:3902/<key>`.
+   A second container, `garage-public-access-init`, enables this on the bucket automatically
+   on first boot (see the compose files' comments for why it's a separate container — the
+   image has no shell, and there's no server startup flag for it like there is for bucket
+   creation).
+
+## Docker networks
+
+| Network | Created by | Purpose |
+| --- | --- | --- |
+| `traefik-public` | you, once (domain variant) | Traefik ingress; n8n, the forms, and garage's S3 API sit on it. |
+| `n8n-local` | compose (local variant) | Private bridge for the local stack's own containers. |
+| `inference-network` | you, once | Shared with sibling compose stacks so n8n can call an inference API by container name. |
+| `preprocess-network` | you, once | Shared with sibling compose stacks so n8n can call a preprocessing API by container name — and the network garage uses for its anonymous-GET alias (see Storage above). |
 
 ## How the forms find the webhook (`config.js`)
 

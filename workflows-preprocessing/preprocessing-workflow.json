@@ -3,17 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Preprocessing Pipeline\n1. Form POSTs multipart to this webhook\n2. ZIP is uploaded to MinIO or a ZIP-URL is passed through\n3. Preprocessing API is called\n4. Status is polled every 30s\n5. Email sent on success/failure",
+        "content": "## Preprocessing Pipeline\n1. Form POSTs multipart to this webhook\n2. ZIP is uploaded to Garage or a ZIP-URL is passed through\n3. Preprocessing API is called\n4. Status is polled every 30s\n5. Email sent on success/failure",
         "height": 208,
         "width": 436
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        10240,
-        2464
+        15984,
+        4464
       ],
-      "id": "deb254bd-7ad1-4abe-992f-45a8ab46f252",
+      "id": "3c2315ea-f3e9-49d5-83c1-6d4c958a2b04",
       "name": "Sticky Note"
     },
     {
@@ -29,10 +29,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        10576,
-        2752
+        16320,
+        4976
       ],
-      "id": "536ba449-acb6-4969-8f3c-a6d7c795e539",
+      "id": "83dc9dd9-3067-47a3-b985-9cfa52d3895a",
       "name": "Webhook: Receive Form",
       "webhookId": "a7100e1a-5596-44af-845b-916049d7497f",
       "credentials": {
@@ -53,10 +53,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        10800,
-        2656
+        16544,
+        4880
       ],
-      "id": "8c73947a-c923-4be0-a08a-71bbcde980ce",
+      "id": "4ea355fd-cdec-4b52-a58c-bc651a615f92",
       "name": "Respond: 202 Accepted"
     },
     {
@@ -86,10 +86,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        10800,
-        2848
+        16544,
+        5072
       ],
-      "id": "32adb0d0-77eb-4f79-be73-38f75c97de75",
+      "id": "5e3e89ba-5484-48c1-a3ab-bfc84f923ca1",
       "name": "Has uploaded ZIP?"
     },
     {
@@ -109,37 +109,11 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        11024,
-        2752
+        16768,
+        4992
       ],
-      "id": "c1dd51c9-ffea-4f47-926e-8ee805e7cbf7",
+      "id": "c040e3f8-4c58-48e3-8ccf-3a0d5b84b5fe",
       "name": "Compute Upload Key"
-    },
-    {
-      "parameters": {
-        "operation": "upload",
-        "bucketName": "uploads",
-        "fileName": "={{ $json.upload_key }}",
-        "binaryPropertyName": "={{ $('Webhook: Receive Form').item.binary.zipfile }}",
-        "additionalFields": {},
-        "tagsUi": {
-          "tagsValues": []
-        }
-      },
-      "type": "n8n-nodes-base.s3",
-      "typeVersion": 1,
-      "position": [
-        11248,
-        2752
-      ],
-      "id": "5fa74099-f9c0-4e29-96dd-7c819cd4298a",
-      "name": "Upload ZIP to MinIO",
-      "credentials": {
-        "s3": {
-          "id": "8JAgVdOvCMvRgyH6",
-          "name": "S3 account"
-        }
-      }
     },
     {
       "parameters": {
@@ -148,7 +122,7 @@
             {
               "id": "assign-zip-url-from-minio",
               "name": "resolved_zip_url",
-              "value": "={{ 'https://minio.flow-project.net/uploads/' + $('Compute Upload Key').item.json.upload_key }}",
+              "value": "={{ 'http://uploads.web.garage.internal:3902/' + $('Compute Upload Key').item.json.upload_key }}",
               "type": "string"
             },
             {
@@ -164,10 +138,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        11472,
-        2752
+        17216,
+        4928
       ],
-      "id": "168aee6c-540d-4519-b389-d864eb635571",
+      "id": "3ce27cd7-abec-4ec6-8440-2e1fcef081cc",
       "name": "Set URL from Upload"
     },
     {
@@ -193,16 +167,16 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        11472,
-        2944
+        17216,
+        5376
       ],
-      "id": "18af321e-5e08-485e-a66e-da1335c86eab",
+      "id": "4eca1c20-ca10-4bb3-9889-85d610a3394c",
       "name": "Set URL from Form Field"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://preprocess-service.flow-project.net/preprocess/zip",
+        "url": "http://service-trocr-preprocess:8000/preprocess/zip",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -285,17 +259,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        11696,
-        2848
+        17440,
+        4928
       ],
-      "id": "b5920de8-c7cf-4615-868a-84d7bb6eef0f",
+      "id": "55e70a14-7164-4ebc-b7a6-02c95b4cd131",
       "name": "POST: Start Preprocessing",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Ly9NzEMHZBnv8dfy",
           "name": "Header Auth account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -326,10 +301,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        11920,
-        2848
+        17648,
+        4704
       ],
-      "id": "fa415291-fa17-43bc-8015-3de80eb1c587",
+      "id": "1c332324-4736-45db-9ac9-e093685d587e",
       "name": "Extract Job ID & Email"
     },
     {
@@ -339,16 +314,16 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        12144,
-        2848
+        17888,
+        4848
       ],
-      "id": "6f9a8577-15f9-47d5-b692-e302749cbe96",
+      "id": "0b25d047-5899-47d1-b457-7ccc611801b9",
       "name": "Wait 30s",
       "webhookId": "e8dd615c-cd36-4596-9ce2-b461ac038eff"
     },
     {
       "parameters": {
-        "url": "=https://preprocess-service.flow-project.net/status/{{ $json.process_id }}",
+        "url": "=http://service-trocr-preprocess:8000/status/{{ $json.process_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -358,17 +333,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        12368,
-        2776
+        18112,
+        4784
       ],
-      "id": "37c43486-f920-4e17-8f82-37eaa6565533",
+      "id": "df587e7e-ca03-4eb0-aafa-2335e9799bf1",
       "name": "GET: Check Status",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Ly9NzEMHZBnv8dfy",
           "name": "Header Auth account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -435,10 +411,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        12592,
-        2776
+        18336,
+        4704
       ],
-      "id": "b59408db-e75c-4a7a-823f-992cc70240e1",
+      "id": "700a8afe-09ce-4ca0-80a8-85dedbc19bdc",
       "name": "Merge Status Context"
     },
     {
@@ -477,10 +453,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        12816,
-        2848
+        18560,
+        4704
       ],
-      "id": "8cf0b32e-aacc-4517-a27d-9b8208ec53c8",
+      "id": "5eac0b0a-1767-49f1-b5cf-03dacec0623a",
       "name": "Job finished?"
     },
     {
@@ -510,10 +486,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        13040,
-        2848
+        18784,
+        4704
       ],
-      "id": "7a2001f0-b58f-4a7e-a6f0-8679e50fbde8",
+      "id": "875a85e4-18cd-433c-b0dd-b75f36cd991b",
       "name": "Success or Failure?"
     },
     {
@@ -531,10 +507,10 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        13264,
-        2752
+        19008,
+        4656
       ],
-      "id": "64dc644d-0e70-45e5-98aa-399a8625d195",
+      "id": "c47396c8-0fc7-4aa8-89c4-bafe4b05153f",
       "name": "Email: Success",
       "webhookId": "8f78f2b1-6bd8-4777-9a95-a36df4bba053",
       "credentials": {
@@ -559,10 +535,10 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        13264,
-        2944
+        18816,
+        5200
       ],
-      "id": "4b2336ec-dc86-428f-a9c6-70867602f924",
+      "id": "88c0a3ac-26fc-4f4c-a15d-0672d86d6793",
       "name": "Email: Failure",
       "webhookId": "a69369fa-0663-4777-8b82-c493705ef87b",
       "credentials": {
@@ -571,6 +547,33 @@
           "name": "SMTP account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "uploads",
+        "fileName": "={{ $json.upload_key }}",
+        "binaryPropertyName": "={{ $('Webhook: Receive Form').item.binary.zipfile }}",
+        "additionalFields": {},
+        "tagsUi": {
+          "tagsValues": []
+        }
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        16992,
+        4992
+      ],
+      "id": "d31bb023-6ec3-478e-8461-9036044e4f73",
+      "name": "Upload ZIP to Garage",
+      "credentials": {
+        "s3": {
+          "id": "8JAgVdOvCMvRgyH6",
+          "name": "S3 account"
+        }
+      },
+      "onError": "continueErrorOutput"
     }
   ],
   "pinData": {},
@@ -613,18 +616,7 @@
       "main": [
         [
           {
-            "node": "Upload ZIP to MinIO",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upload ZIP to MinIO": {
-      "main": [
-        [
-          {
-            "node": "Set URL from Upload",
+            "node": "Upload ZIP to Garage",
             "type": "main",
             "index": 0
           }
@@ -661,6 +653,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -691,6 +690,13 @@
         [
           {
             "node": "Merge Status Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Failure",
             "type": "main",
             "index": 0
           }
@@ -743,6 +749,24 @@
           }
         ]
       ]
+    },
+    "Upload ZIP to Garage": {
+      "main": [
+        [
+          {
+            "node": "Set URL from Upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -750,11 +774,12 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "e1b798b7-11f5-4704-b4d5-d1e0ef19823b",
+  "versionId": "e2608af4-be04-4963-be48-f055dcc16e25",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "69c5ac709efddeb1926841a8dba71f057d4345bc500219252c23d3b33a2732e3"
   },
+  "nodeGroups": [],
   "id": "KVTGQ7I5BphX3lxH",
   "tags": [
     {
