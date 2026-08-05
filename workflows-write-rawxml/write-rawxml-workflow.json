@@ -85,7 +85,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://inference-service.flow-project.net/xml-merge/start",
+        "url": "http://service-trocr-inference:8000/xml-merge/start",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -203,7 +203,7 @@
     },
     {
       "parameters": {
-        "url": "=https://inference-service.flow-project.net/xml-merge/status/{{ $json.process_id }}",
+        "url": "=http://service-trocr-inference:8000/xml-merge/status/{{ $json.process_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -412,7 +412,8 @@
           "id": "SU1oQTKpVo8gu007",
           "name": "SMTP account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -439,6 +440,58 @@
         "smtp": {
           "id": "SU1oQTKpVo8gu007",
           "name": "SMTP account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=RawXML merge complete: {{ $json.output_repo || $json.raw_xml_repo }}",
+        "text": "=RawXML merge finished successfully\n\nRaw XML dataset: {{ $json.raw_xml_repo }}\nInference dataset: {{ $json.inference_repo }}\nOutput dataset: {{ $json.output_repo }}\nJob ID: {{ $json.process_id }}\nItems processed: {{ $json.total_items }}\nRuntime: {{ $json.runtime }}s\n\nOutput repository: https://huggingface.co/datasets/{{ $json.output_repo }}\n\n----\nSent by the Flow RawXML merge pipeline.",
+        "html": "=<h2>RawXML merge finished successfully</h2><ul><li><strong>Raw XML dataset:</strong> {{ $json.raw_xml_repo }}</li><li><strong>Inference dataset:</strong> {{ $json.inference_repo }}</li><li><strong>Output dataset:</strong> {{ $json.output_repo }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Items processed:</strong> {{ $json.total_items }}</li><li><strong>Runtime:</strong> {{ $json.runtime }}s</li></ul><p>Output repository: <a href=\"https://huggingface.co/datasets/{{ $json.output_repo }}\">https://huggingface.co/datasets/{{ $json.output_repo }}</a></p><hr><p><small>Sent by the Flow RawXML merge pipeline.</small></p>",
+        "additionalFields": {},
+        "variablesUi": {
+          "variablesValues": []
+        }
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        2352,
+        -102
+      ],
+      "id": "7c08cf1f-9199-4ab1-862e-3b9a1ad18121",
+      "name": "Success: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=RawXML merge FAILED: {{ $json.output_repo || $json.raw_xml_repo }}",
+        "text": "=RawXML merge failed\n\nRaw XML dataset: {{ $json.raw_xml_repo }}\nInference dataset: {{ $json.inference_repo }}\nOutput dataset: {{ $json.output_repo }}\nJob ID: {{ $json.process_id }}\nStatus: {{ $json.status }}\nError: {{ $json.error_message }}\n\nPlease check the RawXML merge service logs.\n\n----\nSent by the Flow RawXML merge pipeline.",
+        "html": "=<h2>RawXML merge failed</h2><ul><li><strong>Raw XML dataset:</strong> {{ $json.raw_xml_repo }}</li><li><strong>Inference dataset:</strong> {{ $json.inference_repo }}</li><li><strong>Output dataset:</strong> {{ $json.output_repo }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Status:</strong> {{ $json.status }}</li><li><strong>Error:</strong> {{ $json.error_message }}</li></ul><p>Please check the RawXML merge service logs.</p><hr><p><small>Sent by the Flow RawXML merge pipeline.</small></p>",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        2352,
+        390
+      ],
+      "id": "5c5cac97-1613-420f-ba7f-45a2cbeaf2f9",
+      "name": "Failure: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
         }
       }
     }
@@ -514,11 +567,21 @@
             "node": "Email: Success",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Success: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
           }
         ],
         [
           {
             "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
             "type": "main",
             "index": 0
           }

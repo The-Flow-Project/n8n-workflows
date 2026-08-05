@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        10240,
-        1464
+        2624,
+        736
       ],
-      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234560001",
+      "id": "296162bf-94a6-4d5c-a210-a8d1ee5ab102",
       "name": "Sticky Note"
     },
     {
@@ -29,10 +29,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        10576,
-        1752
+        2960,
+        1104
       ],
-      "id": "b2c3d4e5-f6a7-8901-bcde-f12345670002",
+      "id": "50a09e1d-5bf9-4d35-91bf-ccfd3ad49893",
       "name": "Webhook: Receive HF Form",
       "webhookId": "c1d2e3f4-a5b6-7890-cdef-012345678903",
       "credentials": {
@@ -53,10 +53,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        10800,
-        1656
+        3184,
+        1008
       ],
-      "id": "c3d4e5f6-a7b8-9012-cdef-123456780003",
+      "id": "5351e520-ed8d-480e-b0c2-dceea3125958",
       "name": "Respond: 202 Accepted"
     },
     {
@@ -76,16 +76,16 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        10800,
-        1848
+        3184,
+        1200
       ],
-      "id": "d4e5f6a7-b8c9-0123-def0-234567890004",
+      "id": "b28b764f-71a3-4a12-87af-95a8d3ee1402",
       "name": "Build HF Params"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://preprocess-service.flow-project.net/preprocess/hf",
+        "url": "http://service-trocr-preprocess:8000/preprocess/hf",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -168,17 +168,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        11024,
-        1848
+        3408,
+        1200
       ],
-      "id": "e5f6a7b8-c9d0-1234-ef01-345678900005",
+      "id": "f12a709e-53e2-4bba-8593-fdc2d6249749",
       "name": "POST: Start HF Preprocessing",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Ly9NzEMHZBnv8dfy",
           "name": "Header Auth account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -209,10 +210,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        11248,
-        1848
+        3632,
+        1120
       ],
-      "id": "f6a7b8c9-d0e1-2345-f012-456789010006",
+      "id": "dd92e909-68c3-4888-98cd-2be92abd9be3",
       "name": "Extract Job ID & Email"
     },
     {
@@ -222,16 +223,16 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        11472,
-        1848
+        3856,
+        1120
       ],
-      "id": "a7b8c9d0-e1f2-3456-0123-567890120007",
+      "id": "453653cf-bb37-46ab-9ef5-f37fef51b5f9",
       "name": "Wait 30s",
       "webhookId": "d4e5f6a7-b8c9-0123-def0-234567890007"
     },
     {
       "parameters": {
-        "url": "=https://preprocess-service.flow-project.net/status/{{ $json.process_id }}",
+        "url": "=http://service-trocr-preprocess:8000/status/{{ $json.process_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -241,17 +242,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        11696,
-        1776
+        4080,
+        1056
       ],
-      "id": "b8c9d0e1-f2a3-4567-1234-678901230008",
+      "id": "3c6b6049-633c-41bd-b1c2-568940747e01",
       "name": "GET: Check Status",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Ly9NzEMHZBnv8dfy",
           "name": "Header Auth account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -318,10 +320,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        11920,
-        1776
+        4304,
+        976
       ],
-      "id": "c9d0e1f2-a3b4-5678-2345-789012340009",
+      "id": "839191b4-8493-4851-b47b-13d0e112d6b6",
       "name": "Merge Status Context"
     },
     {
@@ -360,10 +362,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        12144,
-        1848
+        4528,
+        976
       ],
-      "id": "d0e1f2a3-b4c5-6789-3456-890123450010",
+      "id": "6d09d3fc-e3e6-474c-b6dc-3a813efb7c43",
       "name": "Job finished?"
     },
     {
@@ -393,10 +395,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        12368,
-        1848
+        4752,
+        976
       ],
-      "id": "e1f2a3b4-c5d6-7890-4567-901234560011",
+      "id": "d7c855e2-d7dd-49bd-a999-148691af4270",
       "name": "Success or Failure?"
     },
     {
@@ -414,10 +416,10 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        12592,
-        1752
+        4976,
+        928
       ],
-      "id": "f2a3b4c5-d6e7-8901-5678-012345670012",
+      "id": "896ec0fd-0bde-4ce4-b067-1c03b89b98ef",
       "name": "Email: Success",
       "webhookId": "e5f6a7b8-c9d0-1234-ef01-345678900012",
       "credentials": {
@@ -425,7 +427,8 @@
           "id": "4OJjUu2L3CuBhyy3",
           "name": "SMTP account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -442,16 +445,68 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        12592,
-        1944
+        4976,
+        1200
       ],
-      "id": "a3b4c5d6-e7f8-9012-6789-123456780013",
+      "id": "d978aadd-9f97-4be3-8486-7c38b25a0950",
       "name": "Email: Failure",
       "webhookId": "f6a7b8c9-d0e1-2345-f012-456789010013",
       "credentials": {
         "smtp": {
           "id": "4OJjUu2L3CuBhyy3",
           "name": "SMTP account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Preprocessing complete: {{ $json.repo_name }}",
+        "text": "=Preprocessing finished successfully\n\nYour HuggingFace dataset has been preprocessed and uploaded to HuggingFace.\n\nRepository: {{ $json.repo_name }}\nJob ID: {{ $json.process_id }}\nPages: {{ $json.total_pages }}\nRegions: {{ $json.total_regions }}\nLines: {{ $json.total_lines }}\nRuntime: {{ $json.runtime }}s\n\nYou can access the dataset at https://huggingface.co/datasets/{{ $json.repo_name }}\n\n---- Sent by the Flow preprocessing pipeline.",
+        "html": "=<h2>Preprocessing finished successfully</h2> <p> Your HuggingFace dataset has been preprocessed and uploaded to HuggingFace. </p>  <ul>   <li><strong>Repository:</strong> {{ $json.repo_name }}</li>   <li><strong>Job ID:</strong> {{ $json.process_id }}</li>   <li><strong>Pages:</strong> {{ $json.total_pages }}</li>   <li><strong>Regions:</strong> {{ $json.total_regions }}</li>   <li><strong>Lines:</strong> {{ $json.total_lines }}</li>   <li><strong>Runtime:</strong> {{ $json.runtime }}s</li> </ul> <p> You can access the dataset at <a href=\"https://huggingface.co/datasets/{{ $json.repo_name }}\">https://huggingface.co/datasets/{{ $json.repo_name }}</a>. </p> ---- <p> <small>Sent by the Flow preprocessing pipeline.</small> </p>",
+        "additionalFields": {},
+        "variablesUi": {
+          "variablesValues": []
+        }
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        4976,
+        736
+      ],
+      "id": "e5f996d4-7f86-47b2-b17d-45dcefbcbc1c",
+      "name": "Success: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Preprocessing FAILED: {{ $json.repo_name }}",
+        "text": "=Preprocessing failed\n\nUnfortunately your preprocessing job encountered an error.\n\nRepository: {{ $json.repo_name }}\nJob ID: {{ $json.process_id }}\nError: {{ $json.error_message }}\n\nPlease check the preprocessing service logs or contact the administrator.\n---- Sent by the Flow preprocessing pipeline.",
+        "html": "=<h2>Preprocessing failed</h2><p>Unfortunately your preprocessing job encountered an error.</p><ul><li><strong>Repository:</strong> {{ $json.repo_name }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Status:</strong> {{ $json.status }}</li><li><strong>Error:</strong> {{ $json.error_message }}</li></ul><p>Please check the preprocessing service logs or contact the administrator.</p><hr><p><small>Sent by the Flow preprocessing pipeline.</small></p>",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        4976,
+        1408
+      ],
+      "id": "be609bc0-1cd1-4c13-a9c5-6ccc9537c8f7",
+      "name": "Failure: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
         }
       }
     }
@@ -493,6 +548,18 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -523,6 +590,18 @@
         [
           {
             "node": "Merge Status Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
             "type": "main",
             "index": 0
           }
@@ -565,6 +644,11 @@
             "node": "Email: Success",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Success: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -572,24 +656,31 @@
             "node": "Email: Failure",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
-  "versionId": "hf-preprocessing-v1",
+  "versionId": "24af31ac-0286-40f3-8fe3-30be63a0cf78",
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "69c5ac709efddeb1926841a8dba71f057d4345bc500219252c23d3b33a2732e3"
   },
+  "nodeGroups": [],
+  "id": "b0mgHAXAVlMS8D2F",
   "tags": [
     {
-      "updatedAt": "2026-05-19T00:00:00.000Z",
-      "createdAt": "2026-05-19T00:00:00.000Z",
+      "updatedAt": "2026-04-23T06:46:09.410Z",
+      "createdAt": "2026-04-23T06:46:09.410Z",
       "id": "7NjtNIwbpxOf4m0G",
       "name": "flow"
     }

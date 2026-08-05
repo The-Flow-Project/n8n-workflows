@@ -1,0 +1,41 @@
+# docker-compose.mailserver.yml
+#
+# Optional self-hosted send-only mail relay (Postfix + OpenDKIM) for the DOMAIN variant.
+# Wires n8n's instance emails (user invites, password resets) to it. Workflow-level email
+# has alternatives that need no self-hosted mail at all — see ../README.md (Mailjet, Gmail).
+# Apply this only if you want self-hosted, own-domain sending:
+#
+#   docker compose -f docker-compose.n8n.yml -f docker-compose.mailserver.yml up -d
+#
+# Required .env variables: DOMAIN_NAME, SUBDOMAIN_MAIL, SMTP_SENDER, DKIM_SELECTOR.
+
+services:
+  n8n:
+    environment:
+      - N8N_EMAIL_MODE=smtp
+      - N8N_SMTP_HOST=mailserver
+      - N8N_SMTP_PORT=587
+      - N8N_SMTP_SSL=false
+      - N8N_SMTP_SENDER=${SMTP_SENDER}@${DOMAIN_NAME}
+
+  # send-only relay; no inbox/receiving. Get the DKIM public key with:
+  #   docker exec mailserver cat /etc/opendkim/keys/${DOMAIN_NAME}/${DKIM_SELECTOR:-mail}.txt
+  mailserver:
+    image: boky/postfix:latest
+    container_name: mailserver
+    restart: unless-stopped
+    environment:
+      - HOSTNAME=${SUBDOMAIN_MAIL}.${DOMAIN_NAME}
+      - ALLOWED_SENDER_DOMAINS=${DOMAIN_NAME}
+      - DKIM_AUTOGENERATE=1
+      # selector must match the published yourmail._domainkey TXT record;
+      # maybe default selector "mail" collides with another server's existing mail._domainkey on this domain
+      - DKIM_SELECTOR=${DKIM_SELECTOR:-mail}
+      - POSTFIX_inet_protocols=ipv4
+    volumes:
+      - mailserver-opendkim-keys:/etc/opendkim/keys
+    networks:
+      - traefik-public
+
+volumes:
+  mailserver-opendkim-keys:

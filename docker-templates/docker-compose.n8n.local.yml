@@ -12,8 +12,19 @@
 #   local  : docker compose -f docker-templates/docker-compose.n8n.local.yml up -d
 #
 # Required .env variables: see docker-templates/.env.local.example
-#   SERVER_IP, ENCRYPTION_KEY, GENERIC_TIMEZONE, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD,
-#   BUCKET_NAME, DOMAIN_NAME, SUBDOMAIN_MAIL, SMTP_SENDER
+#   SERVER_IP, ENCRYPTION_KEY, GENERIC_TIMEZONE, GARAGE_RPC_SECRET, GARAGE_ADMIN_TOKEN,
+#   GARAGE_METRICS_TOKEN, GARAGE_ACCESS_KEY, GARAGE_SECRET_KEY, BUCKET_NAME
+#
+# Self-hosted outbound mail is optional, not part of this file — see
+# docker-compose.mailserver.local.yml (and ../README.md for non-self-hosted alternatives).
+#
+# Garage is internal-only, reachable two ways — see docker-compose.n8n.yml's header
+# comment for the full explanation:
+#   1. S3 API (SigV4-authenticated): http://garage:3900/${BUCKET_NAME}/<key>
+#   2. Anonymous GET via the website endpoint, for services that only take a plain URL
+#      (e.g. a preprocessing API on `preprocess-network` fetching an uploaded file):
+#      http://${BUCKET_NAME}.web.garage.internal:3902/<key>
+#      The garage-public-access-init service below enables this automatically on first boot.
 
 services:
   n8n:
@@ -47,13 +58,6 @@ services:
       # --- Timezone ---
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${GENERIC_TIMEZONE}
-
-      # --- SMTP (outbound mail via internal mailserver) ---
-      - N8N_EMAIL_MODE=smtp
-      - N8N_SMTP_HOST=mailserver
-      - N8N_SMTP_PORT=587
-      - N8N_SMTP_SSL=false
-      - N8N_SMTP_SENDER=${SMTP_SENDER}@${DOMAIN_NAME}
     volumes:
       - n8n-data:/home/node/.n8n
       - ./local-files:/files
@@ -68,69 +72,59 @@ services:
       - inference-network
       - preprocess-network
 
-  minio:
-    image: minio/minio:latest
-    container_name: minio
+  # Single binary, single container: `--single-node --default-bucket` makes Garage
+  # assign its own cluster layout and create BUCKET_NAME + an access key with
+  # read/write on it at first boot — no separate container needed for that part. The
+  # image is `FROM scratch` (no shell/curl inside), which is also why config is
+  # injected via the `configs:` block below instead of a templated entrypoint script,
+  # and why there's no Docker healthcheck here.
+  garage:
+    image: dxflrs/garage:v2.3.0
+    container_name: garage
     restart: unless-stopped
     # no ports published: reachable only from other containers on n8n-local
-    # (e.g. http://minio:9000 from n8n), not from outside the host.
+    # (e.g. http://garage:3900 from n8n), not from outside the host.
+    command: [ "/garage", "server", "--single-node", "--default-bucket" ]
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_SERVER_URL: http://minio:9000
-    command: server /data --console-address ":9001"
+      GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_ACCESS_KEY}
+      GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_SECRET_KEY}
+      GARAGE_DEFAULT_BUCKET: ${BUCKET_NAME}
+    configs:
+      - source: garage_toml
+        target: /etc/garage.toml
     volumes:
-      - minio-data:/data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      - garage-data:/data
     networks:
-      - n8n-local
+      n8n-local: {}
+      # Lets containers in other compose stacks (e.g. a preprocessing API) reach
+      # BUCKET_NAME anonymously via the website endpoint — see header comment above.
+      preprocess-network:
+        aliases:
+          - ${BUCKET_NAME}.web.garage.internal
 
-  minio-init:
-    image: minio/mc:latest
-    container_name: minio-init
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_ENDPOINT: minio:9000
-      BUCKET_NAME: ${BUCKET_NAME}
+  # Unlike bucket creation, enabling anonymous website access has no boot-time flag —
+  # it's only reachable via the `bucket website --allow` CLI call against a *running*
+  # server. `network_mode: service:garage` shares garage's network namespace so this
+  # can reach it at 127.0.0.1 (same trick as `docker exec garage ...` would, just
+  # automatic). It also needs the same garage-data volume: the CLI reads its node key
+  # from metadata_dir, which `network_mode` alone doesn't share (only the network
+  # stack, not the filesystem) — mounting the same volume just lets it see the key the
+  # running server already generated there, nothing writes to it concurrently.
+  # `restart: on-failure` retries until garage's RPC is actually up, then this exits 0
+  # for good — idempotent, so re-running it on every `up` is harmless.
+  garage-public-access-init:
+    image: dxflrs/garage:v2.3.0
+    container_name: garage-public-access-init
+    command: [ "/garage", "bucket", "website", "--allow", "${BUCKET_NAME}" ]
+    configs:
+      - source: garage_toml
+        target: /etc/garage.toml
+    volumes:
+      - garage-data:/data
+    network_mode: "service:garage"
     depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Initializing MinIO...';
-      /usr/bin/mc alias set myminio http://$${MINIO_ENDPOINT} $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-      /usr/bin/mc mb myminio/$${BUCKET_NAME} --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/$${BUCKET_NAME};
-      echo 'MinIO initialization complete (bucket policy: public-read)';
-      exit 0;
-      "
-    networks:
-      - n8n-local
-
-  # ── Send-only SMTP relay (Postfix + OpenDKIM) ────────────────────────
-  # send-only relay; internal use only (no published port). The sender
-  # domain is still a real domain so outgoing mail has a valid From address.
-  mailserver:
-    image: boky/postfix:latest
-    container_name: mailserver
-    restart: unless-stopped
-    environment:
-      - HOSTNAME=${SUBDOMAIN_MAIL}.${DOMAIN_NAME}
-      - ALLOWED_SENDER_DOMAINS=${DOMAIN_NAME}
-      - DKIM_AUTOGENERATE=1
-      # selector must match the published yourmail._domainkey TXT record;
-      # maybe default selector "mail" collides with another server's existing mail._domainkey on this domain
-      - DKIM_SELECTOR=${DKIM_SELECTOR:-mail}
-      - POSTFIX_inet_protocols=ipv4
-    volumes:
-      - mailserver-opendkim-keys:/etc/opendkim/keys
-    networks:
-      - n8n-local
+      - garage
+    restart: on-failure
 
   # ── All forms behind one entry point (landing menu + /workflows-*/ sub-paths) ──
   forms:
@@ -153,12 +147,9 @@ volumes:
   n8n-data:
     external: true
     name: n8n_n8n-data
-  minio-data:
+  garage-data:
     external: true
-    name: n8n_minio-data
-  mailserver-opendkim-keys:
-    external: true
-    name: n8n_mailserver-opendkim-keys
+    name: n8n_garage-data
 
 
 # ── Networks ─────────────────────────────────────────────────────────
@@ -176,3 +167,34 @@ networks:
     external: true
   preprocess-network:
     external: true
+
+# ── Configs ──────────────────────────────────────────────────────────
+# Rendered from .env at `docker compose config`/`up` time and mounted read-only
+# into the garage container — the image has no shell to template this itself.
+configs:
+  garage_toml:
+    content: |
+      metadata_dir = "/data/meta"
+      data_dir = "/data/data"
+      db_engine = "sqlite"
+
+      replication_factor = 1
+
+      rpc_bind_addr = "[::]:3901"
+      rpc_public_addr = "127.0.0.1:3901"
+      rpc_secret = "${GARAGE_RPC_SECRET}"
+
+      [s3_api]
+      s3_region = "garage"
+      api_bind_addr = "[::]:3900"
+      root_domain = ".s3.garage.localhost"
+
+      [s3_web]
+      bind_addr = "[::]:3902"
+      root_domain = ".web.garage.internal"
+      index = "index.html"
+
+      [admin]
+      api_bind_addr = "[::]:3903"
+      admin_token = "${GARAGE_ADMIN_TOKEN}"
+      metrics_token = "${GARAGE_METRICS_TOKEN}"

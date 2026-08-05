@@ -85,7 +85,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://inference-service.flow-project.net/inference/start",
+        "url": "http://service-trocr-inference:8000/inference/start",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -211,7 +211,7 @@
     },
     {
       "parameters": {
-        "url": "=https://inference-service.flow-project.net/inference/status/{{ $json.process_id }}",
+        "url": "=http://service-trocr-inference:8000/inference/status/{{ $json.process_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -420,7 +420,8 @@
           "id": "SU1oQTKpVo8gu007",
           "name": "SMTP account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -447,6 +448,58 @@
         "smtp": {
           "id": "SU1oQTKpVo8gu007",
           "name": "SMTP account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Inference complete: {{ $json.target_repo || $json.source_repo }}",
+        "text": "=Inference finished successfully\n\nSource dataset: {{ $json.source_repo }}\nOutput dataset: {{ $json.target_repo }}\nTrOCR model: {{ $json.model_name }}\nJob ID: {{ $json.process_id }}\nItems processed: {{ $json.total_items }}\nRuntime: {{ $json.runtime }}s\n\nOutput repository: https://huggingface.co/datasets/{{ $json.target_repo }}\n\n----\nSent by the Flow inference pipeline.",
+        "html": "=<h2>Inference finished successfully</h2><ul><li><strong>Source dataset:</strong> {{ $json.source_repo }}</li><li><strong>Output dataset:</strong> {{ $json.target_repo }}</li><li><strong>TrOCR model:</strong> {{ $json.model_name }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Items processed:</strong> {{ $json.total_items }}</li><li><strong>Runtime:</strong> {{ $json.runtime }}s</li></ul><p>Output repository: <a href=\"https://huggingface.co/datasets/{{ $json.target_repo }}\">https://huggingface.co/datasets/{{ $json.target_repo }}</a></p><hr><p><small>Sent by the Flow inference pipeline.</small></p>",
+        "additionalFields": {},
+        "variablesUi": {
+          "variablesValues": []
+        }
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        154
+      ],
+      "id": "b8f7b535-19f6-43e2-84c6-12d38093e188",
+      "name": "Success: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@flow-project.net",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "=Inference FAILED: {{ $json.target_repo || $json.source_repo }}",
+        "text": "=Inference failed\n\nSource dataset: {{ $json.source_repo }}\nOutput dataset: {{ $json.target_repo }}\nTrOCR model: {{ $json.model_name }}\nJob ID: {{ $json.process_id }}\nStatus: {{ $json.status }}\nError: {{ $json.error_message }}\n\nPlease check the inference service logs.\n\n----\nSent by the Flow inference pipeline.",
+        "html": "=<h2>Inference failed</h2><ul><li><strong>Source dataset:</strong> {{ $json.source_repo }}</li><li><strong>Output dataset:</strong> {{ $json.target_repo }}</li><li><strong>TrOCR model:</strong> {{ $json.model_name }}</li><li><strong>Job ID:</strong> {{ $json.process_id }}</li><li><strong>Status:</strong> {{ $json.status }}</li><li><strong>Error:</strong> {{ $json.error_message }}</li></ul><p>Please check the inference service logs.</p><hr><p><small>Sent by the Flow inference pipeline.</small></p>",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.mailjet",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        646
+      ],
+      "id": "f6f3ac13-9936-4600-b35d-31de391d885d",
+      "name": "Failure: Email Mailjet Notification",
+      "credentials": {
+        "mailjetEmailApi": {
+          "id": "FpRIHF94KNBQpJnm",
+          "name": "Mailjet Email account"
         }
       }
     }
@@ -560,11 +613,21 @@
             "node": "Email: Success",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Success: Email Mailjet Notification",
+            "type": "main",
+            "index": 0
           }
         ],
         [
           {
             "node": "Email: Failure",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Failure: Email Mailjet Notification",
             "type": "main",
             "index": 0
           }
