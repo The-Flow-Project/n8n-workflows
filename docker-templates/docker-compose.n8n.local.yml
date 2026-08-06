@@ -54,6 +54,8 @@ services:
       - NODE_ENV=production
       - N8N_PAYLOAD_SIZE_MAX=128
       - N8N_TRUST_PROXY=true
+      - N8N_METRICS=true
+      - QUEUE_HEALTH_CHECK_ACTIVE=true
 
       # --- Timezone ---
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
