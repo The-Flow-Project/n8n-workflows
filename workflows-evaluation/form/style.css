@@ -266,6 +266,7 @@ input[type="file"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
+  margin-bottom: 1rem;
 }
 
 .divider {
@@ -489,7 +490,7 @@ input[type="file"] {
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   font-size: 0.8rem;
   border-top: 1px solid var(--color-brand-border);
   flex-shrink: 0;

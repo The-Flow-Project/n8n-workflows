@@ -3,8 +3,8 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## RawXML Writing Pipeline\n1. Form or API POSTs JSON to this webhook\n2. Raw XML write API is called at /xml-merge/start\n3. Status is polled every 30s\n4. Email sent on success/failure\n\nThe service merges inference output back into raw PageXML and pushes the result to HuggingFace.",
-        "height": 220,
+        "content": "## RawXML Writing Pipeline\n1. Form or API POSTs JSON to this webhook\n2. Raw XML write API is called at /xml-merge/start\n3. Status is polled every 30s\n4. Email sent on success/failure\n\nThe service merges inference output back into raw PageXML and pushes the result to HuggingFace.\n\n## Credentials setup (required)\nImporting this workflow is not enough — every Header Auth field below is left unassigned on purpose and must be created and linked in the n8n UI before this workflow will run:\n- Webhook node -> use the shared \"Webhook API Key\" credential (the same one across every Flow form). This is the only key you ever hand to your users.\n- POST/GET nodes -> use an \"Inference Service API Key\" credential, whose value must match the API_KEY set in service-trocr-inference's own .env file. You need to know that value yourself; never share it with users.",
+        "height": 480,
         "width": 460
       },
       "type": "n8n-nodes-base.stickyNote",
@@ -34,13 +34,7 @@
       ],
       "id": "133a19b8-b378-4816-8603-5589d5693b98",
       "name": "Webhook: Receive RawXML Merge Request",
-      "webhookId": "rawxml-merge-webhook",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "webhookId": "rawxml-merge-webhook"
     },
     {
       "parameters": {
@@ -132,13 +126,7 @@
         144
       ],
       "id": "e9297a64-39e6-419d-a49e-9422ea26cbc1",
-      "name": "POST: Start RawXML Merge",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "name": "POST: Start RawXML Merge"
     },
     {
       "parameters": {
@@ -217,13 +205,7 @@
         80
       ],
       "id": "2a3cad4d-3e6b-48b1-b66e-51f4a67453a1",
-      "name": "GET: Check Status",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "name": "GET: Check Status"
     },
     {
       "parameters": {

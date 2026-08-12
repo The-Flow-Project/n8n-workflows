@@ -25,7 +25,7 @@
 </header>
 
 <div class="beta-banner">
-    <strong>Beta</strong> — This service is currently in beta. Expect changes and potential instability.
+    <strong>Beta</strong>. This service is currently in beta. Expect changes and potential instability.
 </div>
 
 <main class="site-main">
@@ -60,7 +60,7 @@
                 <div class="field">
                     <label for="source_repo_name">Source dataset repository <span
                             class="hint">owner/repo-name</span><span class="tooltip-icon"
-                                                                     data-tip="Input HuggingFace dataset used for inference.">?</span></label>
+                                                                     data-tip="The line dataset to run inference on. Prepare it first with the preprocessing form, using line mode and empty lines allowed.">?</span></label>
                     <input type="text" id="source_repo_name" name="source_repo_name"
                            placeholder="my-org/my-source-dataset"/>
                 </div>
@@ -75,7 +75,7 @@
                 <div class="card-title">Inference Settings</div>
                 <div class="field">
                     <label for="trocr_model">TrOCR model <span class="tooltip-icon"
-                                                               data-tip="HuggingFace model identifier used for inference.">?</span></label>
+                                                               data-tip="Any HuggingFace model identifier that follows the TrOCR architecture, including your own fine-tuned model. Defaults to a small handwritten text checkpoint from Microsoft.">?</span></label>
                     <input type="text" id="trocr_model" name="trocr_model" value="microsoft/trocr-small-handwritten"/>
                 </div>
                 <div class="row-2">
@@ -185,7 +185,7 @@
                         Create as a private repository
                         <span
                             class="tooltip-icon"
-                            data-tip="Uncheck this to create the repository as public."
+                            data-tip="Uncheck to make the repository public. Public repositories are visible to everyone, including bots, and get more free storage on a free HuggingFace account."
                         >?</span>
                     </label>
                 </div>
@@ -255,11 +255,10 @@
 </main>
 
 <footer class="site-footer">
-    <span>© University of Bern 2026</span>
     <div class="site-footer-links">
         <a href="https://flow-project.net" target="_blank" rel="noopener">The Flow Project</a>
         <a href="https://github.com/the-flow-project" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://flow-project.net/impressum" target="_blank" rel="noopener">Impressum</a>
+        <a href="https://flow-project.net/legal" target="_blank" rel="noopener">Impressum</a>
     </div>
 </footer>
 
@@ -401,7 +400,7 @@
             private_repo: gc(form, 'private_repo'),
             trocr_model:
                 gv(form, 'trocr_model') ||
-                'microsoft/trocr-small-printed',
+                'microsoft/trocr-small-handwritten',
             target_image_size: targetImageSize,
             splits: gv(form, 'splits')
                 .split(',')
@@ -486,9 +485,11 @@
                 showStatus(
                     'success',
                     'Inference job submitted successfully. ' +
-                    'You will receive an email if notifications are enabled.'
+                    'You will receive an email if notifications are enabled. ' +
+                    'You can change a field above and submit again without resetting the form.'
                 );
-                btn.textContent = 'Submitted';
+                btn.disabled = false;
+                btn.textContent = 'Start Inference';
             } else {
                 const responseText = await res.text();
                 showStatus('error', `Error ${res.status}: ${responseText}`);

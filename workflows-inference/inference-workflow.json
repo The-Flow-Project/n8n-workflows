@@ -3,8 +3,8 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## TrOCR Inference Pipeline\n1. Form or API POSTs JSON to this webhook\n2. Inference API is called at /inference/start\n3. Status is polled every 30s\n4. Email sent on success/failure\n\nThe inference service reads from HuggingFace and pushes output itself.",
-        "height": 220,
+        "content": "## TrOCR Inference Pipeline\n1. Form or API POSTs JSON to this webhook\n2. Inference API is called at /inference/start\n3. Status is polled every 30s\n4. Email sent on success/failure\n\nThe inference service reads from HuggingFace and pushes output itself.\n\n## Credentials setup (required)\nImporting this workflow is not enough — every Header Auth field below is left unassigned on purpose and must be created and linked in the n8n UI before this workflow will run:\n- Webhook node -> use the shared \"Webhook API Key\" credential (the same one across every Flow form). This is the only key you ever hand to your users.\n- POST/GET nodes -> use an \"Inference Service API Key\" credential, whose value must match the API_KEY set in service-trocr-inference's own .env file. You need to know that value yourself; never share it with users.",
+        "height": 480,
         "width": 460
       },
       "type": "n8n-nodes-base.stickyNote",
@@ -34,13 +34,7 @@
       ],
       "id": "6b32a5c0-dd01-4a59-928c-b69c16600ef4",
       "name": "Webhook: Receive Inference Request",
-      "webhookId": "c5a5012e-a55a-45db-b946-4851d14de75f",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "webhookId": "c5a5012e-a55a-45db-b946-4851d14de75f"
     },
     {
       "parameters": {
@@ -140,13 +134,7 @@
         400
       ],
       "id": "c5b6024c-c419-478c-ad2b-bb2d3c080475",
-      "name": "POST: Start Inference",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "name": "POST: Start Inference"
     },
     {
       "parameters": {
@@ -225,13 +213,7 @@
         336
       ],
       "id": "f751d468-a681-4c5d-94fa-56eb6d3e33e4",
-      "name": "GET: Check Status",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "name": "GET: Check Status"
     },
     {
       "parameters": {

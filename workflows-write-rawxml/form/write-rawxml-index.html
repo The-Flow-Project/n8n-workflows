@@ -25,7 +25,7 @@
 </header>
 
 <div class="beta-banner">
-    <strong>Beta</strong> — This service is currently in beta. Expect changes and potential instability.
+    <strong>Beta</strong>. This service is currently in beta. Expect changes and potential instability.
 </div>
 
 <main class="site-main">
@@ -59,14 +59,14 @@
                 <div class="field">
                     <label for="raw_xml_repo">Raw XML dataset repository <span class="hint">owner/repo-name</span><span
                             class="tooltip-icon"
-                            data-tip="Input HuggingFace dataset containing the raw PageXML.">?</span></label>
+                            data-tip="The original raw_xml dataset your line dataset was preprocessed from. Used to know where each line belongs in the Page XML.">?</span></label>
                     <input type="text" id="raw_xml_repo" name="raw_xml_repo" placeholder="my-org/my-raw-xml-dataset"/>
                 </div>
 
                 <div class="field">
                     <label for="inference_repo">Inference dataset repository <span
                             class="hint">owner/repo-name</span><span class="tooltip-icon"
-                                                                     data-tip="HuggingFace dataset containing inference output that should be written back into the raw XML.">?</span></label>
+                                                                     data-tip="The line dataset produced by inference, containing the inference column with recognized text.">?</span></label>
                     <input type="text" id="inference_repo" name="inference_repo"
                            placeholder="my-org/my-dataset-with-inference"/>
                 </div>
@@ -165,7 +165,7 @@
                         Create as a private repository
                         <span
                             class="tooltip-icon"
-                            data-tip="Uncheck this to create the new repository as public."
+                            data-tip="Uncheck to make the new repository public. Public repositories are visible to everyone, including bots, and get more free storage on a free HuggingFace account."
                         >?</span>
                     </label>
                 </div>
@@ -235,11 +235,10 @@
 </main>
 
 <footer class="site-footer">
-    <span>© University of Bern 2026</span>
     <div class="site-footer-links">
         <a href="https://flow-project.net" target="_blank" rel="noopener">The Flow Project</a>
         <a href="https://github.com/the-flow-project" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://flow-project.net/impressum" target="_blank" rel="noopener">Impressum</a>
+        <a href="https://flow-project.net/legal" target="_blank" rel="noopener">Impressum</a>
     </div>
 </footer>
 
@@ -458,9 +457,11 @@
                 showStatus(
                     'success',
                     'RawXML merge job submitted successfully. ' +
-                    'You will receive an email if notifications are enabled.'
+                    'You will receive an email if notifications are enabled. ' +
+                    'You can change a field above and submit again without resetting the form.'
                 );
-                submitButton.textContent = 'Submitted';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Start RawXML Merge';
             } else {
                 const text = await response.text();
                 showStatus('error', `Error ${response.status}: ${text}`);

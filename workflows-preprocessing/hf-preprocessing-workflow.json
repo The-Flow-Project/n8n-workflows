@@ -3,8 +3,8 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## HF Preprocessing Pipeline\n1. Form POSTs JSON to this webhook\n2. Preprocessing API is called with HuggingFace source repo\n3. Status is polled every 30s\n4. Email sent on success/failure",
-        "height": 176,
+        "content": "## HF Preprocessing Pipeline\n1. Form POSTs JSON to this webhook\n2. Preprocessing API is called with HuggingFace source repo\n3. Status is polled every 30s\n4. Email sent on success/failure\n\n## Credentials setup (required)\nImporting this workflow is not enough — every Header Auth field below is left unassigned on purpose and must be created and linked in the n8n UI before this workflow will run:\n- Webhook node -> use the shared \"Webhook API Key\" credential (the same one across every Flow form). This is the only key you ever hand to your users.\n- POST/GET nodes -> use a \"Preprocessing Service API Key\" credential, whose value must match the API_KEY set in service-trocr-preprocess's own .env file. You need to know that value yourself; never share it with users.",
+        "height": 436,
         "width": 436
       },
       "type": "n8n-nodes-base.stickyNote",
@@ -34,13 +34,7 @@
       ],
       "id": "50a09e1d-5bf9-4d35-91bf-ccfd3ad49893",
       "name": "Webhook: Receive HF Form",
-      "webhookId": "c1d2e3f4-a5b6-7890-cdef-012345678903",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "Ly9NzEMHZBnv8dfy",
-          "name": "Header Auth account"
-        }
-      }
+      "webhookId": "c1d2e3f4-a5b6-7890-cdef-012345678903"
     },
     {
       "parameters": {
@@ -173,12 +167,6 @@
       ],
       "id": "f12a709e-53e2-4bba-8593-fdc2d6249749",
       "name": "POST: Start HF Preprocessing",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "Ly9NzEMHZBnv8dfy",
-          "name": "Header Auth account"
-        }
-      },
       "onError": "continueErrorOutput"
     },
     {
@@ -247,12 +235,6 @@
       ],
       "id": "3c6b6049-633c-41bd-b1c2-568940747e01",
       "name": "GET: Check Status",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "Ly9NzEMHZBnv8dfy",
-          "name": "Header Auth account"
-        }
-      },
       "onError": "continueErrorOutput"
     },
     {

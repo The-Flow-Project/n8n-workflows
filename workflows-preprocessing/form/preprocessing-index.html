@@ -25,7 +25,7 @@
 </header>
 
 <div class="beta-banner">
-    <strong>Beta</strong> — This service is currently in beta. Expect changes and potential instability.
+    <strong>Beta</strong>. This service is currently in beta. Expect changes and potential instability.
 </div>
 
 <main class="site-main">
@@ -76,7 +76,7 @@
                 <div id="zip-hf-field" class="field" style="display:none">
                     <label for="hf_source_repo">Source repository <span class="hint">owner/repo-name</span> <span
                             class="tooltip-icon"
-                            data-tip="A HuggingFace dataset repository used as input. It must already contain 'xml_content' and 'image' columns (raw_xml format)">?</span></label>
+                            data-tip="A HuggingFace dataset repository used as input. It must already contain 'xml_content' and 'image' columns, meaning it is already in raw_xml format.">?</span></label>
                     <input type="text" id="hf_source_repo" name="huggingface_source_repo_name"
                            placeholder="myorg/my-raw-xml-dataset"/>
                 </div>
@@ -104,7 +104,7 @@
                         <input type="checkbox" name="huggingface_target_repo_private" id="hf_private"/>
                         Private repository
                         <span class="tooltip-icon"
-                              data-tip="If checked, the target dataset repository will be created as private on HuggingFace.">?</span>
+                              data-tip="If checked, the repository is created as private. Public repositories are visible to everyone, including bots, and get more free storage on a free HuggingFace account.">?</span>
                     </label>
                 </div>
             </div>
@@ -115,7 +115,7 @@
 
                 <div class="field">
                     <label for="export_mode">Export mode <span class="tooltip-icon"
-                                                               data-tip="Output format: 'raw_xml' keeps the full Page XML, 'line' extracts line images with transcriptions, 'text' exports plain text only, 'region' extracts region images with transcriptions.">?</span></label>
+                                                               data-tip="raw_xml keeps the full Page XML for publishing, backup, or further preprocessing later. line extracts individual line images and is what inference, evaluation, and training use. text exports page level text only. region extracts region images with text.">?</span></label>
                     <select id="export_mode" name="export_mode">
                         <option value="raw_xml" selected>raw_xml</option>
                         <option value="line">line</option>
@@ -131,20 +131,27 @@
                         <input type="checkbox" name="allow_empty_lines" checked/>
                         Allow empty lines
                         <span class="tooltip-icon"
-                              data-tip="If checked, lines with no transcription text are included in the output dataset. Mandatory for inference preprocessing.">?</span>
+                              data-tip="If checked, lines without a transcription are included as empty rows. Required for a line dataset meant for inference, since every line needs a row for the model to fill in. Leave unchecked for training or evaluation data, where you only want lines that already have a transcription.">?</span>
                     </label>
                     <label class="checkbox-row">
                         <input type="checkbox" name="crop"/>
                         Crop images
                         <span class="tooltip-icon"
-                              data-tip="If checked, line images are cropped according to the existing linemasks (or added via 'Kraken linemasks' segmentation options in Expert settings).">?</span>
+                              data-tip="If checked, each line image is cropped to its line mask. This can improve training and inference results, but only if the linemasks are accurate. A poor segmentation can crop out real text, so check the linemask quality first if unsure.">?</span>
                     </label>
                     <label class="checkbox-row">
                         <input type="checkbox" name="append"/>
-                        Append (don't overwrite)
+                        Append (do not overwrite)
                         <span class="tooltip-icon"
-                              data-tip="If checked, new records are appended to an existing dataset rather than overwriting it. They have to be the same export mode.">?</span>
+                              data-tip="If checked, new records are added to an existing dataset of the same export mode instead of overwriting it. There is no automatic duplicate check, so appending the same source twice creates duplicate rows.">?</span>
                     </label>
+                </div>
+
+                <div class="field">
+                    <label for="augmentation_loops">Augmentation loops <span class="tooltip-icon"
+                                                                             data-tip="Creates this many extra augmented copies of each line image, following the augmentation recommendations from the TrOCR paper. This can improve training results. It does not make sense for data meant for inference or evaluation, so leave it at 0 there.">?</span></label>
+                    <input type="number" id="augmentation_loops" name="augmentation_loops" value="0" min="0"
+                           max="10"/>
                 </div>
             </div>
 
@@ -212,13 +219,6 @@
                                 </div>
                             </div>
 
-                            <div class="field">
-                                <label for="augmentation_loops">Augmentation loops <span class="tooltip-icon"
-                                                                                         data-tip="Number of additional augmented copies generated per line image. Set to 0 to disable augmentation entirely.">?</span></label>
-                                <input type="number" id="augmentation_loops" name="augmentation_loops" value="0" min="0"
-                                       max="10"/>
-                            </div>
-
                         </div>
                     </div>
 
@@ -268,11 +268,10 @@
 </main>
 
 <footer class="site-footer">
-    <span>© University of Bern 2026</span>
     <div class="site-footer-links">
         <a href="https://flow-project.net" target="_blank" rel="noopener">The Flow Project</a>
         <a href="https://github.com/the-flow-project" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://flow-project.net/impressum" target="_blank" rel="noopener">Impressum</a>
+        <a href="https://flow-project.net/legal" target="_blank" rel="noopener">Impressum</a>
     </div>
 </footer>
 
@@ -399,8 +398,9 @@
             const res = await fetch(url, {method: 'POST', headers: {'X-API-KEY': apiKey}, body: buildBody(form)});
             if (res.ok) {
                 showStatus('success',
-                    `Job submitted successfully. You will receive an email at ${form.querySelector('[name="notify_email"]').value} when preprocessing is done.`);
-                btn.textContent = 'Submitted';
+                    `Job submitted successfully. You will receive an email at ${form.querySelector('[name="notify_email"]').value} when preprocessing is done. You can change a field above and submit again without resetting the form.`);
+                btn.disabled = false;
+                btn.textContent = 'Start Preprocessing';
             } else {
                 const text = await res.text();
                 showStatus('error', `Error ${res.status}: ${text}`);

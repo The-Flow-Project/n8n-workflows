@@ -3,8 +3,8 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Hugging Face Evaluation Pipeline\n1. Form or API POSTs JSON to this webhook\n2. Evaluation API is called at /evaluation/hf/start\n3. Status is polled every 30s\n4. Email sent on success/failure\n\nThe service evaluates inference output from a HuggingFace dataset and writes back evaluation statistics.",
-        "height": 220,
+        "content": "## Hugging Face Evaluation Pipeline\n1. Form or API POSTs JSON to this webhook\n2. Evaluation API is called at /evaluation/hf/start\n3. Status is polled every 30s\n4. Email sent on success/failure\n\nThe service evaluates inference output from a HuggingFace dataset and writes back evaluation statistics.\n\n## Credentials setup (required)\nImporting this workflow is not enough — every Header Auth field below is left unassigned on purpose and must be created and linked in the n8n UI before this workflow will run:\n- Webhook node -> use the shared \"Webhook API Key\" credential (the same one across every Flow form). This is the only key you ever hand to your users.\n- POST/GET nodes -> use an \"Inference Service API Key\" credential, whose value must match the API_KEY set in service-trocr-inference's own .env file. You need to know that value yourself; never share it with users.",
+        "height": 480,
         "width": 460
       },
       "type": "n8n-nodes-base.stickyNote",
@@ -34,13 +34,7 @@
       ],
       "id": "98d54a04-3db5-45e1-8054-9e7aa4350b13",
       "name": "Webhook: Receive Evaluation Request",
-      "webhookId": "evaluation-webhook",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "webhookId": "evaluation-webhook"
     },
     {
       "parameters": {
@@ -116,13 +110,7 @@
         400
       ],
       "id": "4d5cf86f-1ce5-42df-be20-9980cf85df6c",
-      "name": "POST: Start Evaluation",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "name": "POST: Start Evaluation"
     },
     {
       "parameters": {
@@ -195,13 +183,7 @@
         336
       ],
       "id": "4f33e41e-f58d-4038-a444-5bc0d524aede",
-      "name": "GET: Check Status",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fTo5NQ0AqGDZE5U6",
-          "name": "Header Auth account"
-        }
-      }
+      "name": "GET: Check Status"
     },
     {
       "parameters": {
